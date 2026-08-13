@@ -1,0 +1,146 @@
+Command: ninja all
+[0/1] Re-running CMake...
+-- Component directory /home/miehirai/esp/v6.0.2/esp-idf/components/mqtt does not contain a CMakeLists.txt file. No component will be added
+-- Minimal build - OFF
+-- git rev-parse returned 'fatal: not a git repository (or any of the parent directories): .git'
+-- Could not use 'git describe' to determine PROJECT_VER.
+-- Building ESP-IDF components for target esp32
+-- ESP-TEE is currently supported only on the esp32c6;esp32h2;esp32c5;esp32c61 SoCs
+-- KCONFIG_REPORT_VERBOSITY not set, using default
+-- Project sdkconfig file /home/miehirai/esp/stock_checker/logger_node/sdkconfig
+-- Compiler supported targets: xtensa-esp-elf
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- App "logger_node" version: 1
+-- Setting up mbedtls configuration
+-- Linkage type is PUBLIC
+-- Adding linker script /home/miehirai/esp/v6.0.2/esp-idf/components/esp_system/ld/esp32/memory.ld.in
+--   -> Preprocessing .in script: /home/miehirai/esp/v6.0.2/esp-idf/components/esp_system/ld/esp32/memory.ld.in
+-- Adding linker script /home/miehirai/esp/v6.0.2/esp-idf/components/esp_system/ld/esp32/sections.ld.in
+--   -> Preprocessing .in script: /home/miehirai/esp/v6.0.2/esp-idf/components/esp_system/ld/esp32/sections.ld.in
+--   -> Applying ldgen processing: /home/miehirai/esp/stock_checker/logger_node/build/esp-idf/esp_system/ld/sections.ld.in
+-- Adding linker script /home/miehirai/esp/v6.0.2/esp-idf/components/esp_rom/esp32/ld/esp32.rom.ld
+-- Adding linker script /home/miehirai/esp/v6.0.2/esp-idf/components/esp_rom/esp32/ld/esp32.rom.api.ld
+-- Adding linker script /home/miehirai/esp/v6.0.2/esp-idf/components/esp_rom/esp32/ld/esp32.rom.libgcc.ld
+-- Adding linker script /home/miehirai/esp/v6.0.2/esp-idf/components/esp_rom/esp32/ld/esp32.rom.libc-funcs.ld
+-- Adding linker script /home/miehirai/esp/v6.0.2/esp-idf/components/soc/esp32/ld/esp32.peripherals.ld
+-- Component idf::esp_trace will be linked with -Wl,--whole-archive
+-- Components: app_trace app_update bootloader bootloader_support bt cmock console cxx driver efuse esp-tls esp_adc esp_app_format esp_blockdev esp_blockdev_util esp_bootloader_format esp_coex esp_common esp_driver_ana_cmpr esp_driver_bitscrambler esp_driver_cam esp_driver_dac esp_driver_dma esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_i3c esp_driver_isp esp_driver_jpeg esp_driver_ledc esp_driver_mcpwm esp_driver_parlio esp_driver_pcnt esp_driver_ppa esp_driver_rmt esp_driver_sd_intf esp_driver_sdio esp_driver_sdm esp_driver_sdmmc esp_driver_sdspi esp_driver_spi esp_driver_touch_sens esp_driver_tsens esp_driver_twai esp_driver_uart esp_driver_usb_serial_jtag esp_eth esp_event esp_gdbstub esp_hal_ana_cmpr esp_hal_ana_conv esp_hal_cam esp_hal_clock esp_hal_dma esp_hal_gpio esp_hal_gpspi esp_hal_i2c esp_hal_i2s esp_hal_ieee802154 esp_hal_jpeg esp_hal_lcd esp_hal_ledc esp_hal_mcpwm esp_hal_mspi esp_hal_parlio esp_hal_pcnt esp_hal_pmu esp_hal_ppa esp_hal_rmt esp_hal_rtc_timer esp_hal_sd esp_hal_security esp_hal_timg esp_hal_touch_sens esp_hal_twai esp_hal_uart esp_hal_usb esp_hal_wdt esp_hid esp_http_client esp_http_server esp_https_ota esp_https_server esp_hw_support esp_lcd esp_libc esp_local_ctrl esp_mm esp_netif esp_netif_stack esp_partition esp_phy esp_pm esp_psram esp_ringbuf esp_rom esp_security esp_stdio esp_system esp_timer esp_trace esp_usb_cdc_rom_console esp_wifi espcoredump espnow_comm esptool_py fatfs freertos hal heap http_parser idf_test ieee802154 log lwip main mbedtls nvs_flash nvs_sec_provider openthread partition_table pc_comm perfmon protobuf-c protocomm pthread rt sdmmc soc spi_flash spiffs tcp_transport ulp unity vfs wear_levelling wpa_supplicant xtensa
+-- Component paths: /home/miehirai/esp/v6.0.2/esp-idf/components/app_trace /home/miehirai/esp/v6.0.2/esp-idf/components/app_update /home/miehirai/esp/v6.0.2/esp-idf/components/bootloader /home/miehirai/esp/v6.0.2/esp-idf/components/bootloader_support /home/miehirai/esp/v6.0.2/esp-idf/components/bt /home/miehirai/esp/v6.0.2/esp-idf/components/cmock /home/miehirai/esp/v6.0.2/esp-idf/components/console /home/miehirai/esp/v6.0.2/esp-idf/components/cxx /home/miehirai/esp/v6.0.2/esp-idf/components/driver /home/miehirai/esp/v6.0.2/esp-idf/components/efuse /home/miehirai/esp/v6.0.2/esp-idf/components/esp-tls /home/miehirai/esp/v6.0.2/esp-idf/components/esp_adc /home/miehirai/esp/v6.0.2/esp-idf/components/esp_app_format /home/miehirai/esp/v6.0.2/esp-idf/components/esp_blockdev /home/miehirai/esp/v6.0.2/esp-idf/components/esp_blockdev_util /home/miehirai/esp/v6.0.2/esp-idf/components/esp_bootloader_format /home/miehirai/esp/v6.0.2/esp-idf/components/esp_coex /home/miehirai/esp/v6.0.2/esp-idf/components/esp_common /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_ana_cmpr /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_bitscrambler /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_cam /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_dac /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_dma /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_gpio /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_gptimer /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_i2c /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_i2s /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_i3c /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_isp /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_jpeg /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_ledc /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_mcpwm /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_parlio /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_pcnt /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_ppa /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_rmt /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_sd_intf /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_sdio /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_sdm /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_sdmmc /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_sdspi /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_spi /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_touch_sens /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_tsens /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_twai /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_uart /home/miehirai/esp/v6.0.2/esp-idf/components/esp_driver_usb_serial_jtag /home/miehirai/esp/v6.0.2/esp-idf/components/esp_eth /home/miehirai/esp/v6.0.2/esp-idf/components/esp_event /home/miehirai/esp/v6.0.2/esp-idf/components/esp_gdbstub /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_ana_cmpr /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_ana_conv /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_cam /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_clock /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_dma /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_gpio /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_gpspi /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_i2c /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_i2s /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_ieee802154 /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_jpeg /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_lcd /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_ledc /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_mcpwm /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_mspi /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_parlio /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_pcnt /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_pmu /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_ppa /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_rmt /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_rtc_timer /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_sd /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_security /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_timg /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_touch_sens /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_twai /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_uart /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_usb /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_wdt /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hid /home/miehirai/esp/v6.0.2/esp-idf/components/esp_http_client /home/miehirai/esp/v6.0.2/esp-idf/components/esp_http_server /home/miehirai/esp/v6.0.2/esp-idf/components/esp_https_ota /home/miehirai/esp/v6.0.2/esp-idf/components/esp_https_server /home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support /home/miehirai/esp/v6.0.2/esp-idf/components/esp_lcd /home/miehirai/esp/v6.0.2/esp-idf/components/esp_libc /home/miehirai/esp/v6.0.2/esp-idf/components/esp_local_ctrl /home/miehirai/esp/v6.0.2/esp-idf/components/esp_mm /home/miehirai/esp/v6.0.2/esp-idf/components/esp_netif /home/miehirai/esp/v6.0.2/esp-idf/components/esp_netif_stack /home/miehirai/esp/v6.0.2/esp-idf/components/esp_partition /home/miehirai/esp/v6.0.2/esp-idf/components/esp_phy /home/miehirai/esp/v6.0.2/esp-idf/components/esp_pm /home/miehirai/esp/v6.0.2/esp-idf/components/esp_psram /home/miehirai/esp/v6.0.2/esp-idf/components/esp_ringbuf /home/miehirai/esp/v6.0.2/esp-idf/components/esp_rom /home/miehirai/esp/v6.0.2/esp-idf/components/esp_security /home/miehirai/esp/v6.0.2/esp-idf/components/esp_stdio /home/miehirai/esp/v6.0.2/esp-idf/components/esp_system /home/miehirai/esp/v6.0.2/esp-idf/components/esp_timer /home/miehirai/esp/v6.0.2/esp-idf/components/esp_trace /home/miehirai/esp/v6.0.2/esp-idf/components/esp_usb_cdc_rom_console /home/miehirai/esp/v6.0.2/esp-idf/components/esp_wifi /home/miehirai/esp/v6.0.2/esp-idf/components/espcoredump /home/miehirai/esp/stock_checker/logger_node/components/espnow_comm /home/miehirai/esp/v6.0.2/esp-idf/components/esptool_py /home/miehirai/esp/v6.0.2/esp-idf/components/fatfs /home/miehirai/esp/v6.0.2/esp-idf/components/freertos /home/miehirai/esp/v6.0.2/esp-idf/components/hal /home/miehirai/esp/v6.0.2/esp-idf/components/heap /home/miehirai/esp/v6.0.2/esp-idf/components/http_parser /home/miehirai/esp/v6.0.2/esp-idf/components/idf_test /home/miehirai/esp/v6.0.2/esp-idf/components/ieee802154 /home/miehirai/esp/v6.0.2/esp-idf/components/log /home/miehirai/esp/v6.0.2/esp-idf/components/lwip /home/miehirai/esp/stock_checker/logger_node/main /home/miehirai/esp/v6.0.2/esp-idf/components/mbedtls /home/miehirai/esp/v6.0.2/esp-idf/components/nvs_flash /home/miehirai/esp/v6.0.2/esp-idf/components/nvs_sec_provider /home/miehirai/esp/v6.0.2/esp-idf/components/openthread /home/miehirai/esp/v6.0.2/esp-idf/components/partition_table /home/miehirai/esp/stock_checker/logger_node/components/pc_comm /home/miehirai/esp/v6.0.2/esp-idf/components/perfmon /home/miehirai/esp/v6.0.2/esp-idf/components/protobuf-c /home/miehirai/esp/v6.0.2/esp-idf/components/protocomm /home/miehirai/esp/v6.0.2/esp-idf/components/pthread /home/miehirai/esp/v6.0.2/esp-idf/components/rt /home/miehirai/esp/v6.0.2/esp-idf/components/sdmmc /home/miehirai/esp/v6.0.2/esp-idf/components/soc /home/miehirai/esp/v6.0.2/esp-idf/components/spi_flash /home/miehirai/esp/v6.0.2/esp-idf/components/spiffs /home/miehirai/esp/v6.0.2/esp-idf/components/tcp_transport /home/miehirai/esp/v6.0.2/esp-idf/components/ulp /home/miehirai/esp/v6.0.2/esp-idf/components/unity /home/miehirai/esp/v6.0.2/esp-idf/components/vfs /home/miehirai/esp/v6.0.2/esp-idf/components/wear_levelling /home/miehirai/esp/v6.0.2/esp-idf/components/wpa_supplicant /home/miehirai/esp/v6.0.2/esp-idf/components/xtensa
+-- Configuring done (7.0s)
+-- Generating done (0.7s)
+-- Build files have been written to: /home/miehirai/esp/stock_checker/logger_node/build
+[1/127] Linking C static library esp-idf/unity/libunity.a
+[2/127] Building C object esp-idf/cmock/CMakeFiles/__idf_cmock.dir/CMock/src/cmock.c.obj
+[3/127] Building C object esp-idf/esp_driver_cam/CMakeFiles/__idf_esp_driver_cam.dir/dvp_share_ctrl.c.obj
+[4/127] Building C object esp-idf/espnow_comm/CMakeFiles/__idf_espnow_comm.dir/espnow_comm.c.obj
+[5/127] Building C object esp-idf/esp_driver_gptimer/CMakeFiles/__idf_esp_driver_gptimer.dir/src/gptimer_common.c.obj
+[6/127] Building C object esp-idf/esp_blockdev_util/CMakeFiles/__idf_esp_blockdev_util.dir/memory.c.obj
+[7/127] Linking C static library esp-idf/esp_driver_i2c/libesp_driver_i2c.a
+[8/127] Building C object esp-idf/esp_driver_dac/CMakeFiles/__idf_esp_driver_dac.dir/dac_oneshot.c.obj
+[9/127] Linking C static library esp-idf/esp_hal_ledc/libesp_hal_ledc.a
+[10/127] Building C object esp-idf/esp_blockdev_util/CMakeFiles/__idf_esp_blockdev_util.dir/generic_partition.c.obj
+[11/127] Building C object esp-idf/esp_driver_cam/CMakeFiles/__idf_esp_driver_cam.dir/esp_cam_ctlr.c.obj
+[12/127] Linking C static library esp-idf/esp_hal_mcpwm/libesp_hal_mcpwm.a
+[13/127] Building C object esp-idf/esp_driver_dac/CMakeFiles/__idf_esp_driver_dac.dir/dac_common.c.obj
+[14/127] Building C object esp-idf/esp_driver_gptimer/CMakeFiles/__idf_esp_driver_gptimer.dir/src/gptimer.c.obj
+[15/127] Building C object esp-idf/esp_driver_dac/CMakeFiles/__idf_esp_driver_dac.dir/dac_cosine.c.obj
+[16/127] Building C object esp-idf/esp_driver_mcpwm/CMakeFiles/__idf_esp_driver_mcpwm.dir/src/mcpwm_com.c.obj
+[17/127] Building C object esp-idf/esp_driver_dac/CMakeFiles/__idf_esp_driver_dac.dir/esp32/dac_dma.c.obj
+[18/127] Building C object esp-idf/esp_driver_mcpwm/CMakeFiles/__idf_esp_driver_mcpwm.dir/src/mcpwm_cmpr.c.obj
+[19/127] Linking C static library esp-idf/esp_hal_pcnt/libesp_hal_pcnt.a
+[20/127] Linking C static library esp-idf/esp_hal_rmt/libesp_hal_rmt.a
+[21/127] Building C object esp-idf/esp_driver_mcpwm/CMakeFiles/__idf_esp_driver_mcpwm.dir/src/mcpwm_fault.c.obj
+[22/127] Building C object esp-idf/esp_driver_mcpwm/CMakeFiles/__idf_esp_driver_mcpwm.dir/src/mcpwm_sync.c.obj
+[23/127] Building C object esp-idf/esp_driver_dac/CMakeFiles/__idf_esp_driver_dac.dir/dac_continuous.c.obj
+[24/127] Building C object esp-idf/esp_driver_rmt/CMakeFiles/__idf_esp_driver_rmt.dir/src/rmt_common.c.obj
+[25/127] Building C object esp-idf/esp_driver_mcpwm/CMakeFiles/__idf_esp_driver_mcpwm.dir/src/mcpwm_gen.c.obj
+[26/127] Building C object esp-idf/esp_driver_mcpwm/CMakeFiles/__idf_esp_driver_mcpwm.dir/src/mcpwm_cap.c.obj
+[27/127] Building C object esp-idf/esp_driver_rmt/CMakeFiles/__idf_esp_driver_rmt.dir/src/rmt_encoder_bytes.c.obj
+[28/127] Building C object esp-idf/esp_driver_rmt/CMakeFiles/__idf_esp_driver_rmt.dir/src/rmt_encoder_copy.c.obj
+[29/127] Building C object esp-idf/esp_driver_rmt/CMakeFiles/__idf_esp_driver_rmt.dir/src/rmt_encoder.c.obj
+[30/127] Building C object esp-idf/esp_driver_mcpwm/CMakeFiles/__idf_esp_driver_mcpwm.dir/src/mcpwm_oper.c.obj
+[31/127] Building C object esp-idf/esp_driver_mcpwm/CMakeFiles/__idf_esp_driver_mcpwm.dir/src/mcpwm_timer.c.obj
+[32/127] Linking C static library esp-idf/esp_driver_sdmmc/libesp_driver_sdmmc.a
+[33/127] Linking C static library esp-idf/esp_driver_sdspi/libesp_driver_sdspi.a
+[34/127] Building C object esp-idf/esp_driver_rmt/CMakeFiles/__idf_esp_driver_rmt.dir/src/rmt_encoder_simple.c.obj
+[35/127] Building C object esp-idf/esp_driver_ledc/CMakeFiles/__idf_esp_driver_ledc.dir/src/ledc.c.obj
+[36/127] Building C object esp-idf/esp_driver_pcnt/CMakeFiles/__idf_esp_driver_pcnt.dir/src/pulse_cnt.c.obj
+[37/127] Building C object esp-idf/esp_driver_sdio/CMakeFiles/__idf_esp_driver_sdio.dir/src/sdio_slave.c.obj
+[38/127] Building C object esp-idf/esp_driver_touch_sens/CMakeFiles/__idf_esp_driver_touch_sens.dir/hw_ver1/touch_version_specific.c.obj
+[39/127] Building C object esp-idf/esp_driver_rmt/CMakeFiles/__idf_esp_driver_rmt.dir/src/rmt_rx.c.obj
+[40/127] Building C object esp-idf/esp_driver_sdm/CMakeFiles/__idf_esp_driver_sdm.dir/src/sdm.c.obj
+[41/127] Building C object esp-idf/esp_driver_twai/CMakeFiles/__idf_esp_driver_twai.dir/esp_twai.c.obj
+[42/127] Building C object esp-idf/esp_eth/CMakeFiles/__idf_esp_eth.dir/src/esp_eth_netif_glue.c.obj
+[43/127] Linking C static library esp-idf/esp_hal_lcd/libesp_hal_lcd.a
+[44/127] Building C object esp-idf/esp_driver_touch_sens/CMakeFiles/__idf_esp_driver_touch_sens.dir/common/touch_sens_common.c.obj
+[45/127] Building C object esp-idf/esp_eth/CMakeFiles/__idf_esp_eth.dir/src/phy/esp_eth_phy_generic.c.obj
+[46/127] Building C object esp-idf/esp_driver_rmt/CMakeFiles/__idf_esp_driver_rmt.dir/src/rmt_tx.c.obj
+[47/127] Linking C static library esp-idf/esp_https_server/libesp_https_server.a
+[48/127] Building C object esp-idf/esp_driver_twai/CMakeFiles/__idf_esp_driver_twai.dir/esp_twai_onchip.c.obj
+[49/127] Building C object esp-idf/esp_eth/CMakeFiles/__idf_esp_eth.dir/src/mac/esp_eth_mac_esp_dma.c.obj
+[50/127] Building C object esp-idf/esp_eth/CMakeFiles/__idf_esp_eth.dir/src/mac/esp_eth_mac_esp_gpio.c.obj
+[51/127] Building C object esp-idf/esp_eth/CMakeFiles/__idf_esp_eth.dir/src/phy/esp_eth_phy_802_3.c.obj
+[52/127] Building C object esp-idf/esp_hid/CMakeFiles/__idf_esp_hid.dir/src/esp_hidd.c.obj
+[53/127] Building C object esp-idf/esp_hid/CMakeFiles/__idf_esp_hid.dir/src/esp_hid_common.c.obj
+[54/127] Building C object esp-idf/esp_eth/CMakeFiles/__idf_esp_eth.dir/src/mac/esp_eth_mac_esp.c.obj
+[55/127] Building C object esp-idf/esp_lcd/CMakeFiles/__idf_esp_lcd.dir/src/esp_lcd_common.c.obj
+[56/127] Building C object esp-idf/esp_lcd/CMakeFiles/__idf_esp_lcd.dir/src/esp_lcd_panel_io.c.obj
+[57/127] Linking C static library esp-idf/protocomm/libprotocomm.a
+[58/127] Building C object esp-idf/esp_eth/CMakeFiles/__idf_esp_eth.dir/src/esp_eth.c.obj
+[59/127] Building C object esp-idf/esp_lcd/CMakeFiles/__idf_esp_lcd.dir/src/esp_lcd_panel_ops.c.obj
+[60/127] Building C object esp-idf/esp_lcd/CMakeFiles/__idf_esp_lcd.dir/src/esp_lcd_panel_ssd1306.c.obj
+[61/127] Building C object esp-idf/esp_lcd/CMakeFiles/__idf_esp_lcd.dir/src/esp_lcd_panel_st7789.c.obj
+[62/127] Building C object esp-idf/esp_hid/CMakeFiles/__idf_esp_hid.dir/src/esp_hidh.c.obj
+[63/127] Building C object esp-idf/esp_lcd/CMakeFiles/__idf_esp_lcd.dir/i2c/esp_lcd_panel_io_i2c.c.obj
+[64/127] Linking C static library esp-idf/wear_levelling/libwear_levelling.a
+[65/127] Building C object esp-idf/esp_local_ctrl/CMakeFiles/__idf_esp_local_ctrl.dir/src/esp_local_ctrl_transport_httpd.c.obj
+[66/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/diskio/diskio_rawflash.c.obj
+[67/127] Building C object esp-idf/esp_local_ctrl/CMakeFiles/__idf_esp_local_ctrl.dir/proto-c/esp_local_ctrl.pb-c.c.obj
+[68/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/diskio/diskio.c.obj
+[69/127] Building C object esp-idf/esp_lcd/CMakeFiles/__idf_esp_lcd.dir/spi/esp_lcd_panel_io_spi.c.obj
+[70/127] Building C object esp-idf/esp_local_ctrl/CMakeFiles/__idf_esp_local_ctrl.dir/src/esp_local_ctrl.c.obj
+[71/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/diskio/diskio_wl.c.obj
+[72/127] Building C object esp-idf/esp_local_ctrl/CMakeFiles/__idf_esp_local_ctrl.dir/src/esp_local_ctrl_handler.c.obj
+[73/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/src/ffunicode.c.obj
+[74/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/port/freertos/ffsystem.c.obj
+[75/127] Building C object esp-idf/perfmon/CMakeFiles/__idf_perfmon.dir/xtensa_perfmon_access.c.obj
+[76/127] Building C object esp-idf/perfmon/CMakeFiles/__idf_perfmon.dir/xtensa_perfmon_masks.c.obj
+[77/127] Building C object esp-idf/perfmon/CMakeFiles/__idf_perfmon.dir/xtensa_perfmon_apis.c.obj
+[78/127] Building C object esp-idf/esp_lcd/CMakeFiles/__idf_esp_lcd.dir/i80/esp_lcd_panel_io_i2s.c.obj
+[79/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/diskio/diskio_sdmmc.c.obj
+[80/127] Building C object esp-idf/rt/CMakeFiles/__idf_rt.dir/FreeRTOS_POSIX_utils.c.obj
+[81/127] Building C object esp-idf/spiffs/CMakeFiles/__idf_spiffs.dir/spiffs_api.c.obj
+[82/127] Building C object esp-idf/spiffs/CMakeFiles/__idf_spiffs.dir/spiffs/src/spiffs_cache.c.obj
+[83/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/vfs/vfs_fat_spiflash.c.obj
+[84/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/vfs/vfs_fat_sdmmc.c.obj
+[85/127] Building C object esp-idf/rt/CMakeFiles/__idf_rt.dir/FreeRTOS_POSIX_mqueue.c.obj
+[86/127] Linking C static library esp-idf/espnow_comm/libespnow_comm.a
+[87/127] Linking C static library esp-idf/cmock/libcmock.a
+[88/127] Building C object esp-idf/pc_comm/CMakeFiles/__idf_pc_comm.dir/pc_comm.c.obj
+FAILED: esp-idf/pc_comm/CMakeFiles/__idf_pc_comm.dir/pc_comm.c.obj 
+/home/miehirai/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc -DESP_PLATFORM -DIDF_VER=\"v6.0.2\" -DSOC_MMU_PAGE_SIZE=CONFIG_MMU_PAGE_SIZE -DSOC_XTAL_FREQ_MHZ=CONFIG_XTAL_FREQ -D_GLIBCXX_HAVE_POSIX_SEMAPHORE -D_GLIBCXX_USE_POSIX_SEMAPHORE -D_GNU_SOURCE -D_POSIX_READER_WRITER_LOCKS -I/home/miehirai/esp/stock_checker/logger_node/build/config -I/home/miehirai/esp/stock_checker/logger_node/components/pc_comm/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_libc/platform_include -I/home/miehirai/esp/v6.0.2/esp-idf/components/freertos/config/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/freertos/config/include/freertos -I/home/miehirai/esp/v6.0.2/esp-idf/components/freertos/config/xtensa/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/freertos/FreeRTOS-Kernel/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/freertos/FreeRTOS-Kernel/portable/xtensa/include/freertos -I/home/miehirai/esp/v6.0.2/esp-idf/components/freertos/esp_additions/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/include/soc -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/ldo/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/debug_probe/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/etm/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/mspi_timing_tuning/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/mspi_timing_tuning/tuning_scheme_impl/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/power_supply/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/modem/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/port/esp32/. -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hw_support/port/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/heap/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/heap/tlsf -I/home/miehirai/esp/v6.0.2/esp-idf/components/log/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/soc/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/soc/esp32 -I/home/miehirai/esp/v6.0.2/esp-idf/components/soc/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/soc/esp32/register -I/home/miehirai/esp/v6.0.2/esp-idf/components/hal/platform_port/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/hal/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/hal/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_rom/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_rom/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_rom/esp32/include/esp32 -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_rom/esp32 -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_common/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_system/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_system/port/soc -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_system/port/include/private -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_stdio/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/xtensa/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/xtensa/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/xtensa/deprecated_include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_gpio/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_gpio/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_usb/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_pmu/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_pmu/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_ana_conv/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_ana_conv/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_dma/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_i2s/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_i2s/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/lwip/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/lwip/include/apps -I/home/miehirai/esp/v6.0.2/esp-idf/components/lwip/lwip/src/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/lwip/port/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/lwip/port/freertos/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/lwip/port/esp32xx/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/lwip/port/esp32xx/include/arch -I/home/miehirai/esp/v6.0.2/esp-idf/components/lwip/port/esp32xx/include/sys -I/home/miehirai/esp/v6.0.2/esp-idf/components/driver/i2c/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/driver/touch_sensor/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/driver/twai/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/driver/touch_sensor/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_i2c/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_i2c/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_twai/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_twai/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_touch_sens/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_hal_touch_sens/include -I/home/miehirai/esp/stock_checker/logger_node/components/espnow_comm/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_wifi/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_wifi/include/local -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_wifi/wifi_apps/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_wifi/wifi_apps/nan_app/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_event/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_phy/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_phy/esp32/include -I/home/miehirai/esp/v6.0.2/esp-idf/components/esp_netif/include @"/home/miehirai/esp/stock_checker/logger_node/build/toolchain/cflags" -fdiagnostics-color=always -ffunction-sections -fdata-sections -Wall -Werror -Wno-error=unused-function -Wno-error=unused-variable -Wno-error=unused-but-set-variable -Wno-error=deprecated-declarations -Wextra -Wno-error=extra -Wno-unused-parameter -Wno-sign-compare -Wno-enum-conversion -gdwarf-4 -ggdb -Og -fno-shrink-wrap -fmacro-prefix-map=/home/miehirai/esp/stock_checker/logger_node=. -fmacro-prefix-map=/home/miehirai/esp/v6.0.2/esp-idf=/IDF -fstrict-volatile-bitfields -fno-jump-tables -fno-tree-switch-conversion -std=gnu23 -Wno-old-style-declaration -fzero-init-padding-bits=all -fno-malloc-dce -MD -MT esp-idf/pc_comm/CMakeFiles/__idf_pc_comm.dir/pc_comm.c.obj -MF esp-idf/pc_comm/CMakeFiles/__idf_pc_comm.dir/pc_comm.c.obj.d -o esp-idf/pc_comm/CMakeFiles/__idf_pc_comm.dir/pc_comm.c.obj -c /home/miehirai/esp/stock_checker/logger_node/components/pc_comm/pc_comm.c
+/home/miehirai/esp/stock_checker/logger_node/components/pc_comm/pc_comm.c:1:2: error: expected ';' before 'void'
+    1 | c
+      |  ^
+      |  ;
+/home/miehirai/esp/stock_checker/logger_node/components/pc_comm/pc_comm.c:4:10: fatal error: driver/uart.h: No such file or directory
+    4 | #include "driver/uart.h"
+      |          ^~~~~~~~~~~~~~~
+compilation terminated.
+[89/127] Linking C static library esp-idf/esp_driver_gptimer/libesp_driver_gptimer.a
+[90/127] Linking C static library esp-idf/esp_blockdev_util/libesp_blockdev_util.a
+[91/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/vfs/vfs_fat.c.obj
+[92/127] Building C object esp-idf/spiffs/CMakeFiles/__idf_spiffs.dir/spiffs/src/spiffs_gc.c.obj
+[93/127] Building C object esp-idf/spiffs/CMakeFiles/__idf_spiffs.dir/spiffs/src/spiffs_check.c.obj
+[94/127] Building C object esp-idf/spiffs/CMakeFiles/__idf_spiffs.dir/spiffs/src/spiffs_hydrogen.c.obj
+[95/127] Building C object esp-idf/spiffs/CMakeFiles/__idf_spiffs.dir/esp_spiffs.c.obj
+[96/127] Building C object esp-idf/spiffs/CMakeFiles/__idf_spiffs.dir/spiffs/src/spiffs_nucleus.c.obj
+[97/127] Building C object esp-idf/fatfs/CMakeFiles/__idf_fatfs.dir/src/ff.c.obj
+ninja: build stopped: subcommand failed.

@@ -1,0 +1,10 @@
+Command: ninja flash
+[1;31m
+A fatal error occurred: Serial data stream stopped: Possible serial noise or corruption.[0m
+[31mCMake Error at /home/miehirai/esp/v6.0.2/esp-idf/components/esptool_py/run_serial_tool.cmake:67 (message):
+  
+  /home/miehirai/.espressif/tools/python/v6.0.2/venv/bin/python;-m;esptool;--chip;esp32
+  failed.
+
+
+[0m

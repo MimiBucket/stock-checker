@@ -1,0 +1,2 @@
+source /home/miehirai/esp/stock_checker/logger_node/build/gdbinit/symbols
+source /home/miehirai/esp/stock_checker/logger_node/build/gdbinit/connect
