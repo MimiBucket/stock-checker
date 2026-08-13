@@ -198,8 +198,6 @@ $<TARGET_FILE:idf::spiffs>
 $<TARGET_FILE:idf::espnow_comm>
 $<TARGET_FILE:idf::led>
 $<TARGET_FILE:__idf_driver>
-$<TARGET_FILE:idf::espp__logger>
-$<TARGET_FILE:__idf_espp__logger>
 $<TARGET_FILE:idf::tof_sensor>
 $<TARGET_FILE:idf::main>
 $<TARGET_FILE:__idf_espnow_comm>

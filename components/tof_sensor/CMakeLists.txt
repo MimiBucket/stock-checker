@@ -1,5 +1,6 @@
 idf_component_register(
-    SRCS "tof_sensor.cpp"
+    SRCS "src/tof_sensor.cpp" "src/vl53l1_platform.c" "src/VL53L1X_api.c" 
     INCLUDE_DIRS "include"
-    REQUIRES esp_driver_i2c espp__vl53l driver
+    REQUIRES driver freertos log
+    PRIV_REQUIRES esp_driver_i2c
 )

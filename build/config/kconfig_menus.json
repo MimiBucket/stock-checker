@@ -34725,37 +34725,6 @@
                 "type": "menu"
             },
             {
-                "children": [
-                    {
-                        "children": [],
-                        "depends_on": null,
-                        "help": "Set the log level for the ESPP Logger. The higher the level, the more\nverbose the log output will be. Note that this configuration only affects\nthe ESPP logger and not the log level of the ESP-IDF components. Furthermore,\nthis configuration will compile-out all log messages below the specified level.\n\n0 - No log output\n1 - Errors only\n2 - Errors and warnings\n3 - Errors, warnings, and info\n4 - Errors, warnings, info, and debug",
-                        "id": "ESPP_LOGGER_LOG_LEVEL",
-                        "name": "ESPP_LOGGER_LOG_LEVEL",
-                        "range": [
-                            0,
-                            4
-                        ],
-                        "title": "Max Log level",
-                        "type": "int"
-                    },
-                    {
-                        "children": [],
-                        "depends_on": null,
-                        "help": "Enable cursor commands for the ESPP Logger. This will allow the user to\nmove the cursor around the terminal and clear the screen.",
-                        "id": "ESPP_LOGGER_ENABLE_CURSOR_COMMANDS",
-                        "name": "ESPP_LOGGER_ENABLE_CURSOR_COMMANDS",
-                        "range": null,
-                        "title": "Enable cursor commands",
-                        "type": "bool"
-                    }
-                ],
-                "depends_on": null,
-                "id": "component-config-espp-logger-home-miehirai-esp-stock_checker-sensor_node-managed_components-espp__logger-Kconfig-1",
-                "title": "ESPP Logger",
-                "type": "menu"
-            },
-            {
                 "children": [],
                 "depends_on": "\"${IDF_BUILD_V2}\"",
                 "id": "component-config-configuration-for-components-not-included-in-the-build-home-miehirai-esp-v6.0.2-esp-idf-Kconfig-744",

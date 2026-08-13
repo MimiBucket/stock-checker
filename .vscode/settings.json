@@ -1,4 +1,6 @@
 {
     "idf.currentSetup": "/home/miehirai/esp/v6.0.2/esp-idf",
-    "C_Cpp.errorSquiggles": "enabled"
+    "C_Cpp.errorSquiggles": "enabled",
+    "idf.port": "/dev/ttyUSB0",
+    "idf.flashType": "UART"
 }

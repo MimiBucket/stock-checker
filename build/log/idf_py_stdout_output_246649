@@ -1,0 +1,185 @@
+Command: /home/miehirai/.espressif/tools/python/v6.0.2/venv/bin/python /home/miehirai/esp/v6.0.2/esp-idf/tools/idf_monitor.py -p /dev/ttyUSB1 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 /home/miehirai/esp/stock_checker/sensor_node/build/sensor_node.elf /home/miehirai/esp/stock_checker/sensor_node/build/bootloader/bootloader.elf -m '/home/miehirai/.espressif/tools/python/v6.0.2/venv/bin/python' '/home/miehirai/esp/v6.0.2/esp-idf/tools/idf.py' '-p' '/dev/ttyUSB1'
+ets Jun  8 2016 00:22:57
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0040,len:6272
+load:0x40078000,len:15820
+load:0x40080400,len:3920
+entry 0x40080644
+[0;32mI (27) boot: ESP-IDF v6.0.2 2nd stage bootloader[0m
+[0;32mI (27) boot: compile time Aug 13 2026 15:09:32[0m
+[0;32mI (27) boot: Multicore bootloader[0m
+[0;32mI (29) boot: chip revision: v1.0[0m
+[0;32mI (31) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (35) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (39) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (42) boot: Enabling RNG early entropy source...[0m
+[0;32mI (47) boot: Partition Table:[0m
+[0;32mI (49) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000[0m
+[0;32mI (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000[0m
+[0;32mI (69) boot:  2 factory          factory app      00 00 00010000 00100000[0m
+[0;32mI (75) boot: End of partition table[0m
+[0;32mI (79) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=1b024h (110628) map[0m
+[0;32mI (125) esp_image: segment 1: paddr=0002b04c vaddr=3ffb0000 size=045b4h ( 17844) load[0m
+[0;32mI (133) esp_image: segment 2: paddr=0002f608 vaddr=40080000 size=00a10h (  2576) load[0m
+[0;32mI (134) esp_image: segment 3: paddr=00030020 vaddr=400d0020 size=87ef8h (556792) map[0m
+[0;32mI (335) esp_image: segment 4: paddr=000b7f20 vaddr=40080a10 size=15a58h ( 88664) load[0m
+[0;32mI (372) esp_image: segment 5: paddr=000cd980 vaddr=50000000 size=000a0h (   160) load[0m
+[0;32mI (383) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (383) boot: Disabling RNG early entropy source...[0m
+[0;32mI (394) cpu_start: Multicore app[0m
+[0;32mI (402) cpu_start: GPIO 3 and 1 are used as console UART I/O pins[0m
+[0;32mI (402) cpu_start: Pro cpu start user code[0m
+[0;32mI (403) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (404) app_init: Application information:[0m
+[0;32mI (408) app_init: Project name:     sensor_node[0m
+[0;32mI (412) app_init: App version:      ea86049-dirty[0m
+[0;32mI (417) app_init: Compile time:     Aug 13 2026 15:09:04[0m
+[0;32mI (422) app_init: ELF file SHA256:  f727880a1...[0m
+[0;32mI (426) app_init: ESP-IDF:          v6.0.2[0m
+[0;32mI (430) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (434) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (438) efuse_init: Chip rev:         v1.0[0m
+[0;32mI (442) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (448) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (453) heap_init: At 3FFB8B58 len 000274A8 (157 KiB): DRAM[0m
+[0;32mI (458) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (464) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (469) heap_init: At 40096468 len 00009B98 (38 KiB): IRAM[0m
+[0;32mI (476) spi_flash: detected chip: generic[0m
+[0;32mI (478) spi_flash: flash io: dio[0m
+[0;33mW (481) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (495) main_task: Started on CPU0[0m
+[0;32mI (495) main_task: Calling app_main()[0m
+[0;32mI (525) wifi:wifi driver task: 3ffc001c, prio:23, stack:6656, core=0[0m
+[0;32mI (525) wifi:wifi firmware version: 00ad238[0m
+[0;32mI (525) wifi:wifi certification version: v7.0[0m
+[0;32mI (525) wifi:config NVS flash: enabled[0m
+[0;32mI (525) wifi:config nano formatting: disabled[0m
+[0;32mI (535) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (535) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (545) wifi:Init management short buffer num: 32[0m
+[0;32mI (545) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (555) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (555) wifi:Init static rx buffer num: 10[0m
+[0;32mI (555) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (565) wifi_init: rx ba win: 6[0m
+[0;32mI (565) wifi_init: accept mbox: 6[0m
+[0;32mI (565) wifi_init: tcpip mbox: 32[0m
+[0;32mI (575) wifi_init: udp mbox: 6[0m
+[0;32mI (575) wifi_init: tcp mbox: 6[0m
+[0;32mI (575) wifi_init: tcp tx win: 5760[0m
+[0;32mI (585) wifi_init: tcp rx win: 5760[0m
+[0;32mI (585) wifi_init: tcp mss: 1440[0m
+[0;32mI (585) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (595) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (595) phy_init: phy_version 4863,a3a4459,Oct 28 2025,14:30:06[0m
+[0;32mI (675) wifi:mode : sta (78:e3:6d:de:9c:d8)[0m
+[0;32mI (675) wifi:enable tsf[0m
+[0;32mI (685) ESPNOW: espnow [version: 2.0] init[0m
+[0;32mI (685) vl53l1x: VL53L1X Model ID: 0xEA[0m
+[0;32mI (685) vl53l1x: Status = 0x03[0m
+[0;32mI (685) vl53l1x: Measurement ready[0m
+[0;32mI (685) vl53l1x: Reading distance from VL53L1X[0m
+[0;32mI (695) vl53l1x: Distance: 0 mm[0m
+[0;32mI (695) tof_sensor: ToF read: 0 mm[0m
+[0;32mI (695) sensor_node: Distance: 0 mm[0m
+[0;32mI (705) espnow_comm: Sent distance: 0 mm[0m
+[0;32mI (805) sensor_node: No correction received this cycle[0m
+[0;32mI (805) sensor_node: Entering deep sleep[0m
+ets Jun  8 2016 00:22:57
+
+rst:0x5 (DEEPSLEEP_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0040,len:6272
+load:0x40078000,len:15820
+load:0x40080400,len:3920
+entry 0x40080644
+[0;32mI (27) boot: ESP-IDF v6.0.2 2nd stage bootloader[0m
+[0;32mI (27) boot: compile time Aug 13 2026 15:09:32[0m
+[0;32mI (27) boot: Multicore bootloader[0m
+[0;32mI (29) boot: chip revision: v1.0[0m
+[0;32mI (32) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (35) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (39) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (42) boot: Enabling RNG early entropy source...[0m
+[0;32mI (47) boot: Partition Table:[0m
+[0;32mI (50) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000[0m
+[0;32mI (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000[0m
+[0;32mI (69) boot:  2 factory          factory app      00 00 00010000 00100000[0m
+[0;32mI (75) boot: End of partition table[0m
+[0;32mI (79) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=1b024h (110628) map[0m
+[0;32mI (126) esp_image: segment 1: paddr=0002b04c vaddr=3ffb0000 size=045b4h ( 17844) load[0m
+[0;32mI (133) esp_image: segment 2: paddr=0002f608 vaddr=40080000 size=00a10h (  2576) load[0m
+[0;32mI (134) esp_image: segment 3: paddr=00030020 vaddr=400d0020 size=87ef8h (556792) map[0m
+[0;32mI (335) esp_image: segment 4: paddr=000b7f20 vaddr=40080a10 size=15a58h ( 88664) load[0m
+[0;32mI (372) esp_image: segment 5: paddr=000cd980 vaddr=50000000 size=000a0h (   160) [0m
+[0;32mI (384) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (384) boot: Disabling RNG early entropy source...[0m
+[0;32mI (394) cpu_start: Multicore app[0m
+[0;32mI (402) cpu_start: GPIO 3 and 1 are used as console UART I/O pins[0m
+[0;32mI (403) cpu_start: Pro cpu start user code[0m
+[0;32mI (403) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (405) app_init: Application information:[0m
+[0;32mI (408) app_init: Project name:     sensor_node[0m
+[0;32mI (413) app_init: App version:      ea86049-dirty[0m
+[0;32mI (417) app_init: Compile time:     Aug 13 2026 15:09:04[0m
+[0;32mI (422) app_init: ELF file SHA256:  f727880a1...[0m
+[0;32mI (426) app_init: ESP-IDF:          v6.0.2[0m
+[0;32mI (430) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (434) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (438) efuse_init: Chip rev:         v1.0[0m
+[0;32mI (442) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (448) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (453) heap_init: At 3FFB8B58 len 000274A8 (157 KiB): DRAM[0m
+[0;32mI (458) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (464) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (469) heap_init: At 40096468 len 00009B98 (38 KiB): IRAM[0m
+[0;32mI (476) spi_flash: detected chip: generic[0m
+[0;32mI (478) spi_flash: flash io: dio[0m
+[0;33mW (481) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (495) main_task: Started on CPU0[0m
+[0;32mI (495) main_task: Calling app_main()[0m
+[0;32mI (525) wifi:wifi driver task: 3ffc001c, prio:23, stack:6656, core=0[0m
+[0;32mI (525) wifi:wifi firmware version: 00ad238[0m
+[0;32mI (525) wifi:wifi certification version: v7.0[0m
+[0;32mI (525) wifi:config NVS flash: enabled[0m
+[0;32mI (525) wifi:config nano formatting: disabled[0m
+[0;32mI (535) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (535) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (545) wifi:Init management short buffer num: 32[0m
+[0;32mI (545) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (555) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (555) wifi:Init static rx buffer num: 10[0m
+[0;32mI (555) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (565) wifi_init: rx ba win: 6[0m
+[0;32mI (565) wifi_init: accept mbox: 6[0m
+[0;32mI (565) wifi_init: tcpip mbox: 32[0m
+[0;32mI (575) wifi_init: udp mbox: 6[0m
+[0;32mI (575) wifi_init: tcp mbox: 6[0m
+[0;32mI (575) wifi_init: tcp tx win: 5760[0m
+[0;32mI (585) wifi_init: tcp rx win: 5760[0m
+[0;32mI (585) wifi_init: tcp mss: 1440[0m
+[0;32mI (585) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (595) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (595) phy_init: phy_version 4863,a3a4459,Oct 28 2025,14:30:06[0m
+[0;32mI (615) wifi:mode : sta (78:e3:6d:de:9c:d8)[0m
+[0;32mI (615) wifi:enable tsf[0m
+[0;32mI (615) ESPNOW: espnow [version: 2.0] init[0m
+[0;32mI (615) vl53l1x: VL53L1X Model ID: 0xEA[0m
+[0;32mI (625) vl53l1x: Status = 0x03[0m
+[0;32mI (625) vl53l1x: Measurement ready[0m
+[0;32mI (625) vl53l1x: Reading distance from VL53L1X[0m
+[0;32mI (625) vl53l1x: Distance: 0 mm[0m
+[0;32mI (625) tof_sensor: ToF read: 0 mm[0m
+[0;32mI (635) sensor_node: Distance: 0 mm[0m
+[0;32mI (635) espnow_comm: Sent distance: 0 mm[0m
+[0;32mI (735) sensor_node: No correction received this cycle[0m
+[0;32mI (735) sensor_node: Entering deep sleep[0m

@@ -8,7 +8,7 @@
 static const char *TAG = "led";
 
 // Placeholder (Distance increases as the bin empties (less material between sensor and target))
-#define LOW_STOCK_THRESHOLD_MM 150
+#define LOW_STOCK_THRESHOLD_MM 15
 
 bool led_init(void) {
     gpio_config_t io_conf = {

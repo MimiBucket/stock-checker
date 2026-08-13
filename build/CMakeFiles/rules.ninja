@@ -2313,22 +2313,13 @@ rule C_STATIC_LIBRARY_LINKER____idf_led_
 
 
 #############################################
-# Rule for compiling CXX files.
+# Rule for compiling C files.
 
-rule CXX_COMPILER____idf_espp__logger_unscanned_
+rule C_COMPILER____idf_tof_sensor_unscanned_
   depfile = $DEP_FILE
   deps = gcc
-  command = ${LAUNCHER}${CODE_CHECK}/home/miehirai/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-g++ $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
-  description = Building CXX object $out
-
-
-#############################################
-# Rule for linking C static library.
-
-rule C_STATIC_LIBRARY_LINKER____idf_espp__logger_
-  command = $PRE_LINK && /usr/bin/cmake -E rm -f $TARGET_FILE && /home/miehirai/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-ar qc $TARGET_FILE $LINK_FLAGS $in && /home/miehirai/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-ranlib $TARGET_FILE && $POST_BUILD
-  description = Linking C static library $TARGET_FILE
-  restat = $RESTAT
+  command = ${LAUNCHER}${CODE_CHECK}/home/miehirai/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20251204/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
+  description = Building C object $out
 
 
 #############################################

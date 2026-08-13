@@ -5,6 +5,7 @@
 #include "freertos/task.h"
 #include <string.h>
 #include "esp_now.h"
+#include "nvs_flash.h"
 
 static const char *TAG = "espnow_comm";
 
@@ -48,6 +49,18 @@ bool espnow_comm_listen_for_correction(uint32_t timeout_ms, uint32_t *adjusted_i
 bool espnow_comm_init(const uint8_t *logger_mac) {
     memcpy(s_logger_mac, logger_mac, 6);
 
+    // Initialize NVS flash partition (required before WiFi init)
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGI(TAG, "NVS partition corrupted, erasing...");
+        nvs_flash_erase();
+        ret = nvs_flash_init();
+    }
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "NVS flash init failed: %s", esp_err_to_name(ret));
+        return false;
+    }
+
     esp_netif_init();
     esp_event_loop_create_default();
     wifi_init_config_t wifi_cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -80,6 +93,7 @@ bool espnow_comm_init(const uint8_t *logger_mac) {
 bool espnow_comm_send_data(uint16_t distance_mm) {
     sensor_data_packet_t pkt = { .distance_mm = distance_mm };
     esp_err_t err = esp_now_send(s_logger_mac, (uint8_t *)&pkt, sizeof(pkt));
+    ESP_LOGI(TAG, "Sent distance: %u mm", distance_mm);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Send failed");
         return false;

@@ -729,31 +729,6 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/espp__format/cmake_install.cmake")
-endif()
-
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
-  include("/home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/espp__logger/cmake_install.cmake")
-endif()
-
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
-  include("/home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/espp__base_component/cmake_install.cmake")
-endif()
-
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
-  include("/home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/espp__base_peripheral/cmake_install.cmake")
-endif()
-
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
-  include("/home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/espp__vl53l/cmake_install.cmake")
-endif()
-
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
   include("/home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/tof_sensor/cmake_install.cmake")
 endif()
 

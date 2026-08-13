@@ -198,8 +198,6 @@
 /home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/espnow_comm/libespnow_comm.a
 /home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/led/libled.a
 /home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/driver/libdriver.a
-/home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/espp__logger/libespp__logger.a
-/home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/espp__logger/libespp__logger.a
 /home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/tof_sensor/libtof_sensor.a
 /home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/main/libmain.a
 /home/miehirai/esp/stock_checker/sensor_node/build/esp-idf/espnow_comm/libespnow_comm.a
