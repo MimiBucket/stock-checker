@@ -1,0 +1,2 @@
+source /home/miehirai/esp/stock_checker/sensor_node/build/bootloader/gdbinit/symbols
+source /home/miehirai/esp/stock_checker/sensor_node/build/bootloader/gdbinit/connect

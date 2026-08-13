@@ -1,0 +1,77 @@
+dependencies:
+  espp/base_component:
+    component_hash: bf0ae988a3c2899e09207ecc278619ede7811af0e3628ee957893c643ee97f95
+    dependencies:
+    - name: espp/logger
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=1.0'
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.1.8
+  espp/base_peripheral:
+    component_hash: dea5a9a445ae7eccd284525ad9cb333ed8f71c22135a68bc79f2011aa0bf32fe
+    dependencies:
+    - name: espp/base_component
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=1.0'
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.1.8
+  espp/format:
+    component_hash: 2e56a327f5a5dcc34768a4b0dfd5f97db746826f302217cae8091233598092fe
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.1.8
+  espp/logger:
+    component_hash: 4d7ddd30b22b5f77570853456b5a786715ca54bb23324152fce84254b6a9c6ef
+    dependencies:
+    - name: espp/format
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=1.0'
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.1.8
+  espp/vl53l:
+    component_hash: 18cf2e2a959b00d2d7e7631da782e57221cc7916bbac308c231e747f798e275e
+    dependencies:
+    - name: espp/base_peripheral
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=1.0'
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.1.8
+  idf:
+    source:
+      type: idf
+    version: 6.0.2
+direct_dependencies:
+- espp/vl53l
+- idf
+manifest_hash: 5dffcd9e118430b7404738328ff406f29bc3cfd023243b39c4bb534df23641bb
+target: esp32
+version: 3.0.0
