@@ -1,8 +1,0 @@
-Command: ninja all
-[1/4] cd /home/miehirai/esp/stock_checker/sensor_node/build && /home/miehirai/.espressif/tools/python/v6.0.2/venv/bin/python /home/miehirai/esp/v6.0.2/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /home/miehirai/esp/stock_checker/sensor_node/build/partition_table/partition-table.bin /home/miehirai/esp/stock_checker/sensor_node/build/sensor_node.bin
-sensor_node.bin binary size 0xbda80 bytes. Smallest app partition is 0x100000 bytes. 0x42580 bytes (26%) free.
-[2/4] Performing build step for 'bootloader'
-[1/1] cd /home/miehirai/esp/stock_checker/sensor_node/build/bootloader && /home/miehirai/.espressif/tools/python/v6.0.2/venv/bin/python /home/miehirai/esp/v6.0.2/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 /home/miehirai/esp/stock_checker/sensor_node/build/bootloader/bootloader.bin
-Bootloader binary size 0x65f0 bytes. 0xa10 bytes (9%) free.
-[3/4] No install step for 'bootloader'
-[4/4] Completed 'bootloader'
