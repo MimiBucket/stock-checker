@@ -3,6 +3,7 @@
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "nvs.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -10,7 +11,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-static const char *TAG = "espnow_comm";
+static const char *TAG = "logger_espnow_comm";
 
 // Every packet on the wire starts with one of these, so the receiver
 // (logger or sensor) can tell what it's looking at instead of guessing
@@ -175,6 +176,109 @@ bool espnow_comm_get_sensor_info(int index, uint8_t mac_out[6], uint32_t *interv
     return true;
 }
 
+// Sensors added at runtime via espnow_comm_add_sensor() (as opposed to
+// the compiled-in list espnow_comm_init() is called with) are persisted
+// here, so a logger reboot can re-register them without the PC having to
+// send ADDSENSOR again for each one. Just the MAC list -- interval/anchor
+// for a newly (re-)registered sensor always starts at the current default,
+// same as any first-time ADDSENSOR.
+#define ADDED_SENSORS_NVS_NAMESPACE "added_sensors"
+#define ADDED_SENSORS_NVS_KEY "macs"
+
+static void save_added_sensor_macs(const uint8_t macs[][6], int count) {
+    nvs_handle_t handle;
+    if (nvs_open(ADDED_SENSORS_NVS_NAMESPACE, NVS_READWRITE, &handle) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to open NVS to persist added sensor list");
+        return;
+    }
+    nvs_set_blob(handle, ADDED_SENSORS_NVS_KEY, macs, (size_t)count * 6);
+    nvs_commit(handle);
+    nvs_close(handle);
+}
+
+// Registers `mac` as an ESP-NOW peer and gives it a slot in s_sensors,
+// without touching NVS -- shared by espnow_comm_add_sensor() (which does
+// persist) and load_added_sensors() at boot (which is replaying what's
+// already in NVS, so re-saving it would be a no-op busywork write on
+// every single startup).
+static espnow_add_sensor_result_t register_sensor_slot(const uint8_t mac[6]) {
+    if (find_sensor_slot(mac) >= 0) {
+        return ESPNOW_ADD_SENSOR_ALREADY_REGISTERED;
+    }
+    if (s_sensor_count >= ESPNOW_COMM_MAX_SENSORS) {
+        return ESPNOW_ADD_SENSOR_TABLE_FULL;
+    }
+
+    esp_now_peer_info_t peer = {};
+    memcpy(peer.peer_addr, mac, 6);
+    peer.channel = 0;
+    peer.encrypt = false;
+    if (esp_now_add_peer(&peer) != ESP_OK) {
+        return ESPNOW_ADD_SENSOR_PEER_FAILED;
+    }
+
+    sensor_state_t *sensor = &s_sensors[s_sensor_count++];
+    memcpy(sensor->mac, mac, 6);
+    sensor->interval_sec = s_default_interval_sec;
+    sensor->anchor_epoch = s_default_anchor_epoch;
+    sensor->last_seen = 0;
+    return ESPNOW_ADD_SENSOR_OK;
+}
+
+// Called once during espnow_comm_init(), after the compiled-in sensor
+// list has already claimed its slots -- re-registers whatever was
+// previously added at runtime via espnow_comm_add_sensor(). A mac that's
+// meanwhile been added to the compiled-in list too is simply skipped
+// (register_sensor_slot's own dedup), so promoting a discovered sensor
+// into the hardcoded list later is safe and doesn't need any cleanup.
+static void load_added_sensors(void) {
+    nvs_handle_t handle;
+    if (nvs_open(ADDED_SENSORS_NVS_NAMESPACE, NVS_READONLY, &handle) != ESP_OK) {
+        return; // never persisted anything yet -- nothing to load
+    }
+    uint8_t macs[ESPNOW_COMM_MAX_SENSORS][6];
+    size_t len = sizeof(macs);
+    esp_err_t err = nvs_get_blob(handle, ADDED_SENSORS_NVS_KEY, macs, &len);
+    nvs_close(handle);
+    if (err != ESP_OK) {
+        return;
+    }
+    int count = (int)(len / 6);
+    for (int i = 0; i < count; i++) {
+        espnow_add_sensor_result_t result = register_sensor_slot(macs[i]);
+        if (result == ESPNOW_ADD_SENSOR_OK) {
+            ESP_LOGI(TAG, "Restored previously-added sensor %02x:%02x:%02x:%02x:%02x:%02x from NVS",
+                     macs[i][0], macs[i][1], macs[i][2], macs[i][3], macs[i][4], macs[i][5]);
+        }
+    }
+}
+
+espnow_add_sensor_result_t espnow_comm_add_sensor(const uint8_t mac[6]) {
+    espnow_add_sensor_result_t result = register_sensor_slot(mac);
+    if (result != ESPNOW_ADD_SENSOR_OK) {
+        return result;
+    }
+
+    // Persist the updated "added at runtime" list: whatever NVS already
+    // had, plus this new MAC. Re-reading NVS instead of keeping a second
+    // parallel in-memory array avoids two sources of truth for the same list.
+    uint8_t macs[ESPNOW_COMM_MAX_SENSORS][6];
+    size_t len = 0;
+    nvs_handle_t handle;
+    if (nvs_open(ADDED_SENSORS_NVS_NAMESPACE, NVS_READONLY, &handle) == ESP_OK) {
+        len = sizeof(macs);
+        if (nvs_get_blob(handle, ADDED_SENSORS_NVS_KEY, macs, &len) != ESP_OK) {
+            len = 0;
+        }
+        nvs_close(handle);
+    }
+    int count = (int)(len / 6);
+    memcpy(macs[count++], mac, 6);
+    save_added_sensor_macs(macs, count);
+
+    return ESPNOW_ADD_SENSOR_OK;
+}
+
 // Kept deliberately trivial — just copies the packet off the driver's
 // buffer and pushes it into the queue. No math, no esp_now_send() here,
 // so this callback returns fast regardless of how busy the processing
@@ -318,7 +422,7 @@ bool espnow_comm_init(const uint8_t sensor_macs[][6], int count) {
     // on -- on marginal USB supplies that spike browns out the board.
     // Trades ESP-NOW range for stability; remove once the power supply
     // (cable/capacitor) is fixed. 44 = 11 dBm (default max is ~20 dBm).
-    esp_err_t tx_power_ret = esp_wifi_set_max_tx_power(44);
+    esp_err_t tx_power_ret = esp_wifi_set_max_tx_power(40);
     if (tx_power_ret != ESP_OK) {
         ESP_LOGW(TAG, "Failed to reduce TX power: %d", tx_power_ret);
     }
@@ -341,6 +445,11 @@ bool espnow_comm_init(const uint8_t sensor_macs[][6], int count) {
             return false;
         }
     }
+
+    // Re-register anything that was added at runtime (via ADDSENSOR) on a
+    // previous boot, so it survives a logger reboot without needing the
+    // PC to send ADDSENSOR again.
+    load_added_sensors();
 
     return true;
 }

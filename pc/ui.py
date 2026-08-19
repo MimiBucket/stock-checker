@@ -12,7 +12,7 @@ import datetime
 import logging
 import time
 
-from PySide6.QtCore import QTime, QTimer
+from PySide6.QtCore import QSettings, QTime, QTimer
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -20,8 +20,10 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
+    QInputDialog,
     QLabel,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QSpinBox,
     QTableWidget,
@@ -31,11 +33,25 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from serial_comm import SerialWorker, list_available_ports
+from serial_comm import SerialWorker, is_valid_mac, list_available_ports
 
 logger = logging.getLogger(__name__)
 
 APP_TITLE = "Stock Checker"
+
+# Persists the "Add Sensor" MAC history (QSettings picks a sensible
+# per-OS storage location automatically -- registry on Windows, a config
+# file under ~/.config on Linux, a plist on macOS).
+SETTINGS_ORG = "StockChecker"
+SETTINGS_APP = "StockChecker"
+SETTINGS_KEY_SENSOR_HISTORY = "sensor_mac_history"
+
+# Seeds the "Add Sensor" history on first run (before anything's been
+# persisted yet) -- these are the two bin sensors that used to be
+# hardcoded into the logger firmware's SENSOR_MACS list, so re-adding
+# them (e.g. after a logger NVS wipe or a swap to a new logger board)
+# doesn't mean hunting up their MAC addresses again.
+SEED_SENSOR_MACS = ["78:e3:6d:de:9c:d8", "58:bf:25:34:38:7c"]  # bin sensor 1, bin sensor 2
 
 # Target used in the frequency dropdown/protocol to mean "every currently
 # registered sensor" rather than one specific MAC. Must match the literal
@@ -65,6 +81,12 @@ OVERDUE_GRACE_FACTOR = 1.5
 # than an incoming message -- the "Overdue" transition has to happen
 # even if nothing new ever arrives.
 ACTIVITY_REFRESH_MS = 2000
+
+# How long to wait for the logger to confirm a Set Frequency / Add Sensor
+# request before telling the user it may not have gone through. Generous
+# enough to cover a normal UART round trip; not so long that a genuinely
+# dropped request leaves the button looking unresponsive for a while.
+REQUEST_TIMEOUT_MS = 4000
 
 # Table column indices, named so the rest of the code doesn't use magic numbers.
 COL_MAC = 0
@@ -198,8 +220,7 @@ class MainWindow(QMainWindow):
         # Maps mac address -> row index in the sensor table, so DATA/
         # SENSORS/FREQ/PROVISIONING messages can find (or idempotently
         # create) the right row instead of scanning the whole table every
-        # time. A future "register new sensor" feature can reuse the
-        # exact same _ensure_row() path a SENSORS message uses today --
+        # time. The "Add Sensor" flow reuses this same _ensure_row() path --
         # nothing about this mapping assumes the sensor list is fixed or
         # only ever grows via SENSORS.
         self._row_for_mac = {}
@@ -209,6 +230,23 @@ class MainWindow(QMainWindow):
         # recomputed against the current time even when nothing new has
         # arrived (see the periodic timer started below).
         self._sensor_state = {}
+
+        # Tracks whether the logger has confirmed the most recent Set
+        # Frequency / Add Sensor request yet -- lets the timeout check
+        # (see REQUEST_TIMEOUT_MS below) tell "confirmed while we were
+        # waiting" apart from "still nothing back", so a click always
+        # produces visible feedback instead of silently doing nothing if
+        # the logger never replies.
+        self._freq_request_confirmed = True
+        self._add_sensor_confirmed = True
+
+        # MAC addresses offered by the "Add Sensor" dialog's dropdown,
+        # persisted across runs so once a sensor's been seen once (added,
+        # or just reported by the logger), you never have to retype its
+        # MAC again. Grows automatically as sensors are discovered -- see
+        # _remember_sensor_mac(), called from _ensure_row().
+        self._settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
+        self._sensor_mac_history = self._load_sensor_mac_history()
 
         self._build_ui()
         self._refresh_ports()
@@ -236,6 +274,7 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(self._build_connection_bar())
         layout.addWidget(self._build_frequency_group())
+        layout.addLayout(self._build_sensor_table_bar())
         layout.addWidget(self._build_sensor_table())
 
         self.statusBar().showMessage("Starting...")
@@ -315,6 +354,19 @@ class MainWindow(QMainWindow):
 
         return group
 
+    def _build_sensor_table_bar(self):
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Sensors"))
+        row.addStretch()
+
+        self.add_sensor_button = QPushButton("Add Sensor")
+        self.add_sensor_button.setObjectName("secondaryButton")
+        self.add_sensor_button.setEnabled(False)  # enabled once connected
+        self.add_sensor_button.clicked.connect(self._on_add_sensor_clicked)
+        row.addWidget(self.add_sensor_button)
+
+        return row
+
     def _build_sensor_table(self):
         self.table = QTableWidget(0, len(COLUMN_HEADERS))
         self.table.setHorizontalHeaderLabels(COLUMN_HEADERS)
@@ -372,6 +424,7 @@ class MainWindow(QMainWindow):
         self._worker.sensors_received.connect(self._on_sensors_received)
         self._worker.freq_received.connect(self._on_freq_received)
         self._worker.provisioning_started.connect(self._on_provisioning_started)
+        self._worker.add_sensor_result.connect(self._on_add_sensor_result)
         self._worker.start()
 
         self.connect_button.setText("Disconnect")
@@ -410,6 +463,7 @@ class MainWindow(QMainWindow):
             self._worker.sensors_received,
             self._worker.freq_received,
             self._worker.provisioning_started,
+            self._worker.add_sensor_result,
         ):
             signal.disconnect()
         self._worker.stop()
@@ -419,6 +473,7 @@ class MainWindow(QMainWindow):
         self.port_combo.setEnabled(True)
         self.refresh_button.setEnabled(True)
         self.set_freq_button.setEnabled(False)
+        self.add_sensor_button.setEnabled(False)
 
     def _on_scanning(self, detail):
         self._set_connection_state("scanning", detail)
@@ -426,6 +481,7 @@ class MainWindow(QMainWindow):
     def _on_serial_connected(self, port_name):
         self._set_connection_state("connected", f"Connected to {port_name}")
         self.set_freq_button.setEnabled(True)
+        self.add_sensor_button.setEnabled(True)
 
     def _on_serial_disconnected(self, reason):
         logger.warning("Disconnected: %s", reason)
@@ -434,6 +490,7 @@ class MainWindow(QMainWindow):
         self.port_combo.setEnabled(True)
         self.refresh_button.setEnabled(True)
         self.set_freq_button.setEnabled(False)
+        self.add_sensor_button.setEnabled(False)
         self._worker = None
 
     def _set_connection_state(self, state, detail):
@@ -482,19 +539,102 @@ class MainWindow(QMainWindow):
         anchor_epoch = self._compute_anchor_epoch()
         logger.info("Requesting new schedule for %s: %d sec, %s",
                      target, interval_sec, self._describe_schedule(anchor_epoch))
+        # Immediate feedback that the click did something, since the
+        # Interval column itself only updates once freq_received actually
+        # confirms it (per sensor) -- without this, a slow or dropped
+        # reply makes the button look like it did nothing at all.
+        self.statusBar().showMessage(f"Requesting schedule for {target}...")
+        self.set_freq_button.setEnabled(False)
+        self._freq_request_confirmed = False
+        QTimer.singleShot(REQUEST_TIMEOUT_MS, self._check_freq_request_timeout)
         self._worker.send_set_frequency(target, interval_sec, anchor_epoch)
-        # Don't assume it worked -- the table's Interval column only
-        # updates once freq_received actually confirms it, per sensor.
+
+    def _check_freq_request_timeout(self):
+        if self._worker is not None:
+            self.set_freq_button.setEnabled(True)
+        if not self._freq_request_confirmed:
+            self.statusBar().showMessage(
+                "No response from logger to the frequency request -- it may not have gone through.", 6000)
 
     def _on_freq_received(self, mac, interval_sec, anchor_epoch):
         logger.info("Logger confirmed schedule for %s: %d sec, %s",
                      mac, interval_sec, self._describe_schedule(anchor_epoch))
+        self._freq_request_confirmed = True
         row = self._ensure_row(mac)
         interval_item = self.table.item(row, COL_INTERVAL)
         interval_item.setText(str(interval_sec))
         interval_item.setToolTip(self._describe_schedule(anchor_epoch).capitalize())
         self._sensor_state[mac]["interval_sec"] = interval_sec
         self._refresh_activity_column()
+        self.statusBar().showMessage(f"Schedule confirmed for {mac}: {interval_sec}s", 4000)
+
+    # ----------------------------------------------------------------
+    # Sensor registration
+    # ----------------------------------------------------------------
+
+    def _load_sensor_mac_history(self):
+        stored = self._settings.value(SETTINGS_KEY_SENSOR_HISTORY)
+        if not stored:
+            return list(SEED_SENSOR_MACS)
+        # QSettings hands back a bare str (not a 1-element list) when only
+        # one value was ever stored -- normalize so callers always get a list.
+        return [stored] if isinstance(stored, str) else list(stored)
+
+    def _remember_sensor_mac(self, mac):
+        if mac in self._sensor_mac_history:
+            return
+        self._sensor_mac_history.append(mac)
+        self._settings.setValue(SETTINGS_KEY_SENSOR_HISTORY, self._sensor_mac_history)
+
+    def _on_add_sensor_clicked(self):
+        if self._worker is None:
+            return
+        # Editable combo box: pick a previously-seen MAC from the dropdown,
+        # or type a brand new one -- either way it lands in the same text field.
+        mac, ok = QInputDialog.getItem(
+            self, "Add Sensor", "Sensor MAC address (select or type xx:xx:xx:xx:xx:xx):",
+            self._sensor_mac_history, 0, True,
+        )
+        if not ok or not mac.strip():
+            return
+        mac = mac.strip()
+        if not is_valid_mac(mac):
+            QMessageBox.warning(
+                self, "Add Sensor",
+                f"\"{mac}\" doesn't look like a MAC address (expected xx:xx:xx:xx:xx:xx)."
+            )
+            return
+        logger.info("Requesting logger register new sensor %s", mac)
+        # Same reasoning as Set Frequency: give immediate feedback that
+        # the click did something, and a bounded timeout so a dropped/
+        # unanswered ADDSENSOR doesn't leave the button looking dead.
+        self.statusBar().showMessage(f"Requesting to add sensor {mac}...")
+        self.add_sensor_button.setEnabled(False)
+        self._add_sensor_confirmed = False
+        QTimer.singleShot(REQUEST_TIMEOUT_MS, self._check_add_sensor_timeout)
+        self._worker.send_add_sensor(mac)
+
+    def _check_add_sensor_timeout(self):
+        if self._worker is not None:
+            self.add_sensor_button.setEnabled(True)
+        if not self._add_sensor_confirmed:
+            self.statusBar().showMessage(
+                "No response from logger to the Add Sensor request -- it may not have gone through.", 6000)
+
+    def _on_add_sensor_result(self, status, mac):
+        self._add_sensor_confirmed = True
+        if status == "ok":
+            logger.info("Logger registered new sensor %s", mac)
+            self.statusBar().showMessage(f"Added sensor {mac}", 5000)
+            return
+        reasons = {
+            "already_registered": "is already registered",
+            "table_full": "couldn't be added -- the sensor table is full",
+            "peer_add_failed": "couldn't be added -- ESP-NOW peer registration failed",
+            "bad_mac": "isn't a valid MAC address",
+        }
+        logger.warning("Add sensor %s failed: %s", mac, status)
+        QMessageBox.warning(self, "Add Sensor", f"{mac} {reasons.get(status, status)}.")
 
     # ----------------------------------------------------------------
     # Sensor table
@@ -505,6 +645,8 @@ class MainWindow(QMainWindow):
         tracking state for it) if this is the first time we've seen it."""
         if mac in self._row_for_mac:
             return self._row_for_mac[mac]
+
+        self._remember_sensor_mac(mac)
 
         row = self.table.rowCount()
         self.table.insertRow(row)
@@ -517,6 +659,9 @@ class MainWindow(QMainWindow):
 
         status_item = QTableWidgetItem("Waiting for data")
         status_item.setForeground(QColor(COLOR_MUTED))
+        status_font = status_item.font()
+        status_font.setBold(True)
+        status_item.setFont(status_font)
         self.table.setItem(row, COL_STATUS, status_item)
 
         self.table.setItem(row, COL_INTERVAL, QTableWidgetItem("--"))

@@ -2,12 +2,12 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 
-#define LED_GPIO_PIN GPIO_NUM_27
+#define LED_GPIO_PIN GPIO_NUM_33
 
 static const char *TAG = "led";
 
 // Placeholder (Distance increases as the bin empties (less material between sensor and target))
-#define LOW_STOCK_THRESHOLD_MM 15
+#define LOW_STOCK_THRESHOLD_MM 30
 
 bool led_init(void) {
     // If the previous cycle called led_hold_for_sleep(), the pad is still

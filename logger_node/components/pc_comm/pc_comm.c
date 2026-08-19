@@ -12,7 +12,7 @@
 #include <stdarg.h>
 #include <sys/time.h>
 
-static const char *TAG = "pc_comm";
+static const char *TAG = "logger_pc_comm";
 
 #define UART_PORT UART_NUM_0
 #define UART_BUF_SIZE 128
@@ -94,15 +94,21 @@ void pc_comm_send_provisioning(const uint8_t mac[6]) {
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
-void pc_comm_send_sensor_list(const uint8_t sensor_macs[][6], int count) {
+void pc_comm_send_sensor_list(void) {
+    int count = espnow_comm_get_sensor_count();
     char line[16 + 18 * 20]; // "SENSORS " + up to 20 "xx:xx:xx:xx:xx:xx," entries
     int offset = snprintf(line, sizeof(line), "SENSORS ");
     for (int i = 0; i < count && offset < (int)sizeof(line) - 1; i++) {
+        uint8_t mac[6];
+        uint32_t interval_sec;
+        time_t anchor_epoch;
+        if (!espnow_comm_get_sensor_info(i, mac, &interval_sec, &anchor_epoch)) {
+            continue;
+        }
         offset += snprintf(line + offset, sizeof(line) - offset,
                             "%s%02x:%02x:%02x:%02x:%02x:%02x",
                             i == 0 ? "" : ",",
-                            sensor_macs[i][0], sensor_macs[i][1], sensor_macs[i][2],
-                            sensor_macs[i][3], sensor_macs[i][4], sensor_macs[i][5]);
+                            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     }
     snprintf(line + offset, sizeof(line) - offset, "\n");
     console_print_line("%s", line);
@@ -161,6 +167,39 @@ static bool check_and_handle_pc_commands(void) {
                 } else {
                     ESP_LOGW(TAG, "SETFREQ: bad target %s", target);
                 }
+            }
+        }
+    } else if (strncmp((char *)data, "ADDSENSOR ", 10) == 0) {
+        // "ADDSENSOR <mac>" -- registers a new sensor at runtime, no
+        // rebuild/reflash needed. Always answered with an ADDSENSOR_RESULT
+        // line so the PC can tell the user what happened instead of the
+        // request just silently doing nothing.
+        char raw[32] = {0};
+        sscanf((char *)data + 10, "%31s", raw);
+
+        uint8_t mac[6];
+        if (!parse_mac(raw, mac)) {
+            console_print_line("ADDSENSOR_RESULT bad_mac %s\n", raw);
+            ESP_LOGW(TAG, "ADDSENSOR: bad mac %s", raw);
+        } else {
+            static const char *kResultNames[] = {
+                [ESPNOW_ADD_SENSOR_OK] = "ok",
+                [ESPNOW_ADD_SENSOR_ALREADY_REGISTERED] = "already_registered",
+                [ESPNOW_ADD_SENSOR_TABLE_FULL] = "table_full",
+                [ESPNOW_ADD_SENSOR_PEER_FAILED] = "peer_add_failed",
+            };
+            espnow_add_sensor_result_t result = espnow_comm_add_sensor(mac);
+            console_print_line("ADDSENSOR_RESULT %s %s\n", kResultNames[result], raw);
+
+            if (result == ESPNOW_ADD_SENSOR_OK) {
+                ESP_LOGI(TAG, "Added sensor %s via PC", raw);
+                pc_comm_send_sensor_list();
+                uint32_t interval_sec;
+                time_t anchor_epoch;
+                espnow_comm_get_schedule(mac, &interval_sec, &anchor_epoch);
+                pc_comm_send_freq(mac, interval_sec, anchor_epoch);
+            } else {
+                ESP_LOGW(TAG, "ADDSENSOR %s failed: %s", raw, kResultNames[result]);
             }
         }
     }

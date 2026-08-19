@@ -30,9 +30,12 @@ void pc_comm_send_freq(const uint8_t mac[6], uint32_t interval_sec, time_t ancho
 // ALL command.
 void pc_comm_send_all_freq(void);
 
-// Formats and sends "SENSORS <mac1,mac2,...>" to the PC. Call once, right
-// after espnow_comm_init() completes.
-void pc_comm_send_sensor_list(const uint8_t sensor_macs[][6], int count);
+// Formats and sends "SENSORS <mac1,mac2,...>" to the PC, covering every
+// sensor currently registered with espnow_comm (compiled-in list plus any
+// added at runtime). Call once after espnow_comm_init() completes, and
+// again whenever the registered set changes (e.g. after a successful
+// ADDSENSOR).
+void pc_comm_send_sensor_list(void);
 
 // Formats and sends "PROVISIONING <mac>" to the PC -- purely informational,
 // telling it a sensor is currently negotiating its interval with the

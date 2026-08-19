@@ -1,12 +1,12 @@
 #include <stdio.h>
-#include "tof_sensor.h"
+#include "sensor_select.h"
+#include "provisioning.h"
 #include "led.h"
 #include "espnow_comm.h"
 #include "esp_sleep.h"
 #include "esp_log.h"
-#include "nvs.h"
 
-static const char *TAG = "sensor_node";
+static const char *TAG = "sensor";
 
 // How long a not-yet-provisioned sensor stays awake announcing itself
 // and waiting for the logger to assign it an interval, and how often it
@@ -19,35 +19,6 @@ static const char *TAG = "sensor_node";
 // If provisioning times out, sleep this long before trying again on the
 // next wake, instead of retrying immediately or staying awake.
 #define PROVISION_RETRY_FALLBACK_SEC (30 * 60)
-
-#define NVS_NAMESPACE "prov"
-#define NVS_KEY_INTERVAL "interval_sec"
-
-// Reads the interval this sensor was last assigned, if any. Returns
-// false if it's never been provisioned (namespace/key doesn't exist yet).
-static bool provisioning_load(uint32_t *interval_sec_out) {
-    nvs_handle_t handle;
-    if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &handle) != ESP_OK) {
-        return false;
-    }
-    esp_err_t err = nvs_get_u32(handle, NVS_KEY_INTERVAL, interval_sec_out);
-    nvs_close(handle);
-    return err == ESP_OK;
-}
-
-// Persists the current interval so it survives a full power loss (deep
-// sleep itself doesn't touch NVS, so this matters only for that case,
-// plus keeping the very first provisioning result around at all).
-static void provisioning_save(uint32_t interval_sec) {
-    nvs_handle_t handle;
-    if (nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle) != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to open NVS for writing provisioning state");
-        return;
-    }
-    nvs_set_u32(handle, NVS_KEY_INTERVAL, interval_sec);
-    nvs_commit(handle);
-    nvs_close(handle);
-}
 
 static void deep_sleep_for(uint32_t seconds) {
     led_hold_for_sleep();
@@ -96,7 +67,7 @@ void app_main(void) {
     }
 
     uint16_t distance_mm = 0;
-    if (tof_sensor_init() && tof_sensor_read(&distance_mm)) {
+    if (distance_sensor_init() && distance_sensor_read(&distance_mm)) {
         ESP_LOGI(TAG, "Distance: %d mm", distance_mm);
         led_update(distance_mm);
         espnow_comm_send_data(distance_mm);
@@ -112,6 +83,6 @@ void app_main(void) {
         ESP_LOGI(TAG, "No correction received this cycle");
     }
 
-    tof_sensor_deinit();
+    distance_sensor_deinit();
     deep_sleep_for(sleep_duration_sec);
 }

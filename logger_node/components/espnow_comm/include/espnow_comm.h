@@ -27,6 +27,20 @@ bool espnow_comm_init(const uint8_t sensor_macs[][6], int count);
 // ignored.
 void espnow_comm_set_schedule(const uint8_t mac[6], uint32_t interval_sec, time_t anchor_epoch);
 
+typedef enum {
+    ESPNOW_ADD_SENSOR_OK = 0,
+    ESPNOW_ADD_SENSOR_ALREADY_REGISTERED,
+    ESPNOW_ADD_SENSOR_TABLE_FULL,
+    ESPNOW_ADD_SENSOR_PEER_FAILED,
+} espnow_add_sensor_result_t;
+
+// Registers a new sensor at runtime -- no rebuild/reflash of the logger
+// needed. Adds it as an ESP-NOW peer, gives it the current default
+// interval/anchor (same as any sensor that hasn't been individually
+// SETFREQ'd), and persists it to NVS so it's still registered after the
+// logger's next reboot without the PC having to re-add it.
+espnow_add_sensor_result_t espnow_comm_add_sensor(const uint8_t mac[6]);
+
 // Mirrors espnow_comm_set_schedule's mac semantics.
 void espnow_comm_get_schedule(const uint8_t mac[6], uint32_t *interval_sec_out, time_t *anchor_epoch_out);
 
