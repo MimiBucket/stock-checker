@@ -6,16 +6,14 @@
 
 static const char *TAG = "led";
 
-// Placeholder (Distance increases as the bin empties (less material between sensor and target))
-#define LOW_STOCK_THRESHOLD_MM 30
+// Distance increases as the bin empties (less material between sensor and
+// target). Kept in sync with STOCK_LOW_THRESHOLD_MM in pc/ui.py.
+#define LOW_STOCK_THRESHOLD_MM 150
 
 bool led_init(void) {
-    // If the previous cycle called led_hold_for_sleep(), the pad is still
-    // latched from before this deep sleep -- ESP32 keeps an RTC GPIO hold
-    // active through sleep AND after waking, specifically so the pin
-    // doesn't glitch. gpio_config()/gpio_set_level() below have no effect
-    // on a held pin, so release it first; led_hold_for_sleep() re-enables
-    // the hold right before the next sleep.
+    // A hold from the previous led_hold_for_sleep() survives waking, and
+    // gpio_config()/gpio_set_level() have no effect on a held pin -- release
+    // it first; led_hold_for_sleep() re-enables it before the next sleep.
     gpio_hold_dis(LED_GPIO_PIN);
 
     gpio_config_t io_conf = {
@@ -39,12 +37,9 @@ void led_update(uint16_t distance_mm) {
 }
 
 void led_hold_for_sleep(void) {
-    // Without this, the GPIO driver resets the pin to its default
-    // (floating) state as soon as deep sleep begins, so the LED would
-    // drop out every cycle regardless of what led_update() last set --
-    // gpio_hold_en() latches the pad's current level through sleep, and
-    // gpio_deep_sleep_hold_en() is the chip-wide switch that makes deep
-    // sleep respect per-pin holds at all (off by default).
+    // Without this the pin floats during deep sleep and the LED drops out
+    // every cycle. gpio_hold_en() latches its level through sleep;
+    // gpio_deep_sleep_hold_en() is the chip-wide switch that respects it.
     gpio_hold_en(LED_GPIO_PIN);
     gpio_deep_sleep_hold_en();
 }

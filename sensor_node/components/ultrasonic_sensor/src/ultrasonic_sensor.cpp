@@ -6,18 +6,16 @@
 
 static const char *TAG = "ultrasonic_sensor";
 
-// Placeholder wiring for an HC-SR04-style trig/echo sensor. Chosen to
-// avoid the ToF sensor's I2C pins (GPIO13/14, see tof_sensor.cpp) and the
-// status LED (GPIO27), so both sensors can stay wired up at once for
-// comparison. Update to match your actual wiring.
+// Placeholder wiring for an HC-SR04-style trig/echo sensor; avoids the
+// ToF sensor's I2C pins (GPIO13/14) and the status LED (GPIO33). Update
+// to match your actual wiring.
 #define TRIG_PIN GPIO_NUM_25
 #define ECHO_PIN GPIO_NUM_26
 
 #define TRIG_PULSE_US 10
 
-// Longest ping-to-echo window we'll wait, for both "no echo started" and
-// "echo never ended" (out of range / sensor not connected). ~5 m round
-// trip at 343 m/s is far more range than a stock bin needs.
+// Longest ping-to-echo wait, covering both "no echo started" and "echo
+// never ended" (out of range / disconnected). ~5m round trip is plenty.
 #define ECHO_TIMEOUT_US 30000
 
 #define SPEED_OF_SOUND_MM_PER_US 0.343f

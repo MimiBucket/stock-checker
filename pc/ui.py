@@ -63,8 +63,8 @@ ALL_SENSORS_TARGET = "ALL"
 # below it, so a LARGER distance means an emptier bin. These are simple
 # global constants for now; a later version could make them per-sensor
 # and editable from the UI (e.g. one bin might be deeper than another).
-STOCK_LOW_THRESHOLD_MM = 300     # distance >= this => "Low"
-STOCK_EMPTY_THRESHOLD_MM = 500   # distance >= this => "Empty"
+STOCK_LOW_THRESHOLD_MM = 150     # distance >= this => "Low"
+STOCK_EMPTY_THRESHOLD_MM = 200   # distance >= this => "Empty"
 
 # --- Activity/overdue detection ------------------------------------------
 # A sensor deep-sleeps between reports, so there's no way to ask it "are
@@ -239,6 +239,12 @@ class MainWindow(QMainWindow):
         # the logger never replies.
         self._freq_request_confirmed = True
         self._add_sensor_confirmed = True
+
+        # True only while the worker currently holds a confirmed logger
+        # connection -- separate from "self._worker is not None", since
+        # the worker keeps running (and can silently reconnect on its
+        # own) even after a transient drop. See _on_serial_disconnected.
+        self._connected = False
 
         # MAC addresses offered by the "Add Sensor" dialog's dropdown,
         # persisted across runs so once a sensor's been seen once (added,
@@ -468,6 +474,7 @@ class MainWindow(QMainWindow):
             signal.disconnect()
         self._worker.stop()
         self._worker = None
+        self._connected = False
         self._set_connection_state("disconnected", "Not connected")
         self.connect_button.setText("Connect")
         self.port_combo.setEnabled(True)
@@ -479,19 +486,30 @@ class MainWindow(QMainWindow):
         self._set_connection_state("scanning", detail)
 
     def _on_serial_connected(self, port_name):
+        self._connected = True
         self._set_connection_state("connected", f"Connected to {port_name}")
         self.set_freq_button.setEnabled(True)
         self.add_sensor_button.setEnabled(True)
 
     def _on_serial_disconnected(self, reason):
         logger.warning("Disconnected: %s", reason)
-        self._set_connection_state("disconnected", reason)
-        self.connect_button.setText("Connect")
-        self.port_combo.setEnabled(True)
-        self.refresh_button.setEnabled(True)
+        # This fires when a *confirmed* connection is lost -- NOT when
+        # the user hits Disconnect (that's _disconnect(), above). The
+        # worker's own run() loop doesn't stop just because the port
+        # dropped: it keeps scanning candidates in the background and
+        # will emit `connected` again on its own if/when it finds the
+        # logger again (see SerialWorker's docstring on auto-detect).
+        # So self._worker must stay set here -- nulling it made every
+        # future Set Frequency / Add Sensor click silently no-op via
+        # their `if self._worker is None` guards, forever, after just
+        # one transient drop, even once the worker reconnected on its
+        # own and _on_serial_connected had already re-enabled the
+        # buttons. self._connected (not self._worker) is what those
+        # guards and the request-timeout handlers check now.
+        self._connected = False
+        self._set_connection_state("scanning", f"{reason} -- retrying...")
         self.set_freq_button.setEnabled(False)
         self.add_sensor_button.setEnabled(False)
-        self._worker = None
 
     def _set_connection_state(self, state, detail):
         color = {"connected": COLOR_GOOD, "scanning": COLOR_WARN, "disconnected": COLOR_BAD}[state]
@@ -532,7 +550,7 @@ class MainWindow(QMainWindow):
         return f"aligned to {aligned_dt.strftime('%H:%M:%S')}"
 
     def _on_set_frequency_clicked(self):
-        if self._worker is None:
+        if not self._connected:
             return
         target = self.freq_target_combo.currentData()
         interval_sec = self.freq_spinbox.value()
@@ -550,7 +568,7 @@ class MainWindow(QMainWindow):
         self._worker.send_set_frequency(target, interval_sec, anchor_epoch)
 
     def _check_freq_request_timeout(self):
-        if self._worker is not None:
+        if self._connected:
             self.set_freq_button.setEnabled(True)
         if not self._freq_request_confirmed:
             self.statusBar().showMessage(
@@ -587,7 +605,7 @@ class MainWindow(QMainWindow):
         self._settings.setValue(SETTINGS_KEY_SENSOR_HISTORY, self._sensor_mac_history)
 
     def _on_add_sensor_clicked(self):
-        if self._worker is None:
+        if not self._connected:
             return
         # Editable combo box: pick a previously-seen MAC from the dropdown,
         # or type a brand new one -- either way it lands in the same text field.
@@ -615,7 +633,7 @@ class MainWindow(QMainWindow):
         self._worker.send_add_sensor(mac)
 
     def _check_add_sensor_timeout(self):
-        if self._worker is not None:
+        if self._connected:
             self.add_sensor_button.setEnabled(True)
         if not self._add_sensor_confirmed:
             self.statusBar().showMessage(

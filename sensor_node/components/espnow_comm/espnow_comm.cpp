@@ -9,10 +9,8 @@
 
 static const char *TAG = "sensor_espnow_comm";
 
-// Every packet on the wire starts with one of these, so the receiver
-// (logger or sensor) can tell what it's looking at instead of guessing
-// from length alone. Mirrored exactly in the logger's espnow_comm.c --
-// if you change one side, change the other.
+// Every packet starts with one of these so the receiver knows what it's
+// looking at. Mirrored exactly in the logger's espnow_comm.c.
 typedef enum {
     PKT_SENSOR_DATA = 1,       // sensor -> logger: a reading
     PKT_CORRECTION = 2,        // logger -> sensor: drift-corrected next interval (normal operation)
@@ -21,8 +19,7 @@ typedef enum {
 } espnow_packet_type_t;
 
 // packed so the wire format is byte-for-byte identical regardless of
-// compiler padding choices -- both sides are ESP32/Xtensa with the same
-// toolchain today, but this removes any doubt.
+// compiler padding.
 typedef struct __attribute__((packed)) {
     uint8_t type; // PKT_SENSOR_DATA
     uint16_t distance_mm;
@@ -126,7 +123,7 @@ bool espnow_comm_run_provisioning(uint32_t timeout_sec, uint32_t announce_interv
 bool espnow_comm_init(const uint8_t *logger_mac) {
     memcpy(s_logger_mac, logger_mac, 6);
 
-    // Initialize NVS flash partition (required before WiFi init)
+    // NVS must be initialized before WiFi init.
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_LOGI(TAG, "NVS partition corrupted, erasing...");
@@ -147,6 +144,14 @@ bool espnow_comm_init(const uint8_t *logger_mac) {
     }
     esp_wifi_set_mode(WIFI_MODE_STA);
     esp_wifi_start();
+
+    // TEMP: cap TX power (~10 dBm vs default ~20) to shrink the radio's
+    // power-on current spike and avoid browning out on marginal USB
+    // power. Mirrors the logger's cap; remove once power supply is fixed.
+    esp_err_t tx_power_ret = esp_wifi_set_max_tx_power(40);
+    if (tx_power_ret != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to reduce TX power: %d", tx_power_ret);
+    }
 
     if (esp_now_init() != ESP_OK) {
         ESP_LOGE(TAG, "ESP-NOW init failed");
