@@ -2,10 +2,12 @@
 build/
 managed_components/
 sdkconfig.old
-dependencies.lock
 
 # Python (pc/)
 .venv/
 __pycache__/
 *.pyc
 logs/
+
+# Editor (machine-specific paths/ports -- see logger_node/.vscode etc.)
+.vscode/

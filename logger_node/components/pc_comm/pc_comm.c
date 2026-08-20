@@ -202,6 +202,32 @@ static bool check_and_handle_pc_commands(void) {
                 ESP_LOGW(TAG, "ADDSENSOR %s failed: %s", raw, kResultNames[result]);
             }
         }
+    } else if (strncmp((char *)data, "REMOVESENSOR ", 13) == 0) {
+        // "REMOVESENSOR <mac>" -- unregisters a sensor at runtime, e.g. for
+        // testing whether sensor count/traffic affects logger stability.
+        // Mirrors ADDSENSOR: always answered with a REMOVESENSOR_RESULT line.
+        char raw[32] = {0};
+        sscanf((char *)data + 13, "%31s", raw);
+
+        uint8_t mac[6];
+        if (!parse_mac(raw, mac)) {
+            console_print_line("REMOVESENSOR_RESULT bad_mac %s\n", raw);
+            ESP_LOGW(TAG, "REMOVESENSOR: bad mac %s", raw);
+        } else {
+            static const char *kResultNames[] = {
+                [ESPNOW_REMOVE_SENSOR_OK] = "ok",
+                [ESPNOW_REMOVE_SENSOR_NOT_FOUND] = "not_found",
+            };
+            espnow_remove_sensor_result_t result = espnow_comm_remove_sensor(mac);
+            console_print_line("REMOVESENSOR_RESULT %s %s\n", kResultNames[result], raw);
+
+            if (result == ESPNOW_REMOVE_SENSOR_OK) {
+                ESP_LOGI(TAG, "Removed sensor %s via PC", raw);
+                pc_comm_send_sensor_list();
+            } else {
+                ESP_LOGW(TAG, "REMOVESENSOR %s failed: %s", raw, kResultNames[result]);
+            }
+        }
     }
     return false;
 }
@@ -226,21 +252,24 @@ static void pc_comm_task(void *arg) {
     while (1) {
         check_and_handle_pc_commands(); // periodic resync + SETFREQ handling
 
-        if (espnow_comm_get_latest_reading(mac, &distance_mm)) {
+        // Drain fully rather than one-per-tick, so a burst of readings
+        // (e.g. multiple sensors waking on the same schedule slot) doesn't
+        // sit queued behind the 50ms poll delay below.
+        while (espnow_comm_get_latest_reading(mac, &distance_mm)) {
             char line[64];
             snprintf(line, sizeof(line), "DATA %02x:%02x:%02x:%02x:%02x:%02x %d\n",
                       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], distance_mm);
             console_print_line("%s", line);
         }
 
-        if (espnow_comm_get_latest_provisioning_event(mac)) {
+        while (espnow_comm_get_latest_provisioning_event(mac)) {
             pc_comm_send_provisioning(mac);
         }
 
         TickType_t now = xTaskGetTickCount();
         if (now - last_heartbeat >= pdMS_TO_TICKS(HEARTBEAT_INTERVAL_MS)) {
-            ESP_LOGI(TAG, "heartbeat: pc_comm_task alive, %d sensor(s) registered",
-                     espnow_comm_get_sensor_count());
+            ESP_LOGI(TAG, "heartbeat: pc_comm_task alive, %d sensor(s) registered, rx_queue depth=%d",
+                     espnow_comm_get_sensor_count(), espnow_comm_get_rx_queue_depth());
             last_heartbeat = now;
         }
 

@@ -239,6 +239,7 @@ class MainWindow(QMainWindow):
         # the logger never replies.
         self._freq_request_confirmed = True
         self._add_sensor_confirmed = True
+        self._remove_sensor_confirmed = True
 
         # True only while the worker currently holds a confirmed logger
         # connection -- separate from "self._worker is not None", since
@@ -294,11 +295,6 @@ class MainWindow(QMainWindow):
         self.port_combo = QComboBox()
         self.port_combo.setMinimumWidth(260)
         row.addWidget(self.port_combo)
-
-        self.refresh_button = QPushButton("Refresh")
-        self.refresh_button.setObjectName("secondaryButton")
-        self.refresh_button.clicked.connect(self._refresh_ports)
-        row.addWidget(self.refresh_button)
 
         self.connect_button = QPushButton("Connect")
         self.connect_button.clicked.connect(self._on_connect_clicked)
@@ -371,6 +367,12 @@ class MainWindow(QMainWindow):
         self.add_sensor_button.clicked.connect(self._on_add_sensor_clicked)
         row.addWidget(self.add_sensor_button)
 
+        self.remove_sensor_button = QPushButton("Remove Sensor")
+        self.remove_sensor_button.setObjectName("secondaryButton")
+        self.remove_sensor_button.setEnabled(False)  # enabled once connected
+        self.remove_sensor_button.clicked.connect(self._on_remove_sensor_clicked)
+        row.addWidget(self.remove_sensor_button)
+
         return row
 
     def _build_sensor_table(self):
@@ -431,6 +433,7 @@ class MainWindow(QMainWindow):
         self._worker.freq_received.connect(self._on_freq_received)
         self._worker.provisioning_started.connect(self._on_provisioning_started)
         self._worker.add_sensor_result.connect(self._on_add_sensor_result)
+        self._worker.remove_sensor_result.connect(self._on_remove_sensor_result)
         self._worker.start()
 
         self.connect_button.setText("Disconnect")
@@ -440,7 +443,6 @@ class MainWindow(QMainWindow):
         # you have to disconnect first, then the dropdown is meaningful
         # again.
         self.port_combo.setEnabled(False)
-        self.refresh_button.setEnabled(False)
         self._set_connection_state("scanning", "Looking for logger...")
 
     def _disconnect(self):
@@ -470,6 +472,7 @@ class MainWindow(QMainWindow):
             self._worker.freq_received,
             self._worker.provisioning_started,
             self._worker.add_sensor_result,
+            self._worker.remove_sensor_result,
         ):
             signal.disconnect()
         self._worker.stop()
@@ -478,9 +481,9 @@ class MainWindow(QMainWindow):
         self._set_connection_state("disconnected", "Not connected")
         self.connect_button.setText("Connect")
         self.port_combo.setEnabled(True)
-        self.refresh_button.setEnabled(True)
         self.set_freq_button.setEnabled(False)
         self.add_sensor_button.setEnabled(False)
+        self.remove_sensor_button.setEnabled(False)
 
     def _on_scanning(self, detail):
         self._set_connection_state("scanning", detail)
@@ -490,6 +493,7 @@ class MainWindow(QMainWindow):
         self._set_connection_state("connected", f"Connected to {port_name}")
         self.set_freq_button.setEnabled(True)
         self.add_sensor_button.setEnabled(True)
+        self.remove_sensor_button.setEnabled(True)
 
     def _on_serial_disconnected(self, reason):
         logger.warning("Disconnected: %s", reason)
@@ -510,6 +514,7 @@ class MainWindow(QMainWindow):
         self._set_connection_state("scanning", f"{reason} -- retrying...")
         self.set_freq_button.setEnabled(False)
         self.add_sensor_button.setEnabled(False)
+        self.remove_sensor_button.setEnabled(False)
 
     def _set_connection_state(self, state, detail):
         color = {"connected": COLOR_GOOD, "scanning": COLOR_WARN, "disconnected": COLOR_BAD}[state]
@@ -654,9 +659,78 @@ class MainWindow(QMainWindow):
         logger.warning("Add sensor %s failed: %s", mac, status)
         QMessageBox.warning(self, "Add Sensor", f"{mac} {reasons.get(status, status)}.")
 
+    def _on_remove_sensor_clicked(self):
+        if not self._connected:
+            return
+        # Unlike Add Sensor, only sensors currently known to be registered
+        # (i.e. showing a row) are meaningful targets -- there's nothing
+        # useful to type in freehand here.
+        known_macs = list(self._row_for_mac.keys())
+        if not known_macs:
+            QMessageBox.information(self, "Remove Sensor", "No sensors registered yet.")
+            return
+        mac, ok = QInputDialog.getItem(
+            self, "Remove Sensor", "Sensor MAC address to remove:",
+            known_macs, 0, False,  # not editable -- pick an existing sensor only
+        )
+        if not ok:
+            return
+        logger.info("Requesting logger unregister sensor %s", mac)
+        # Same reasoning as Set Frequency / Add Sensor: give immediate
+        # feedback that the click did something, and a bounded timeout so
+        # a dropped/unanswered REMOVESENSOR doesn't leave the button
+        # looking dead.
+        self.statusBar().showMessage(f"Requesting to remove sensor {mac}...")
+        self.remove_sensor_button.setEnabled(False)
+        self._remove_sensor_confirmed = False
+        QTimer.singleShot(REQUEST_TIMEOUT_MS, self._check_remove_sensor_timeout)
+        self._worker.send_remove_sensor(mac)
+
+    def _check_remove_sensor_timeout(self):
+        if self._connected:
+            self.remove_sensor_button.setEnabled(True)
+        if not self._remove_sensor_confirmed:
+            self.statusBar().showMessage(
+                "No response from logger to the Remove Sensor request -- it may not have gone through.", 6000)
+
+    def _on_remove_sensor_result(self, status, mac):
+        self._remove_sensor_confirmed = True
+        if status == "ok":
+            logger.info("Logger unregistered sensor %s", mac)
+            self.statusBar().showMessage(f"Removed sensor {mac}", 5000)
+            self._remove_row(mac)
+            return
+        reasons = {
+            "not_found": "isn't currently registered",
+            "bad_mac": "isn't a valid MAC address",
+        }
+        logger.warning("Remove sensor %s failed: %s", mac, status)
+        QMessageBox.warning(self, "Remove Sensor", f"{mac} {reasons.get(status, status)}.")
+
     # ----------------------------------------------------------------
     # Sensor table
     # ----------------------------------------------------------------
+
+    def _remove_row(self, mac):
+        """Undoes _ensure_row(): drops mac's table row and all per-sensor
+        state/UI entries tied to it, once the logger has confirmed it's
+        actually unregistered. Leaves _sensor_mac_history alone -- that's
+        the Add Sensor dropdown's "previously seen" list, independent of
+        whether the sensor is currently registered."""
+        row = self._row_for_mac.pop(mac, None)
+        if row is None:
+            return
+        self.table.removeRow(row)
+        # Every row after the removed one just shifted up by one in the
+        # table, so the indices this dict holds for them are now stale.
+        for other_mac, other_row in self._row_for_mac.items():
+            if other_row > row:
+                self._row_for_mac[other_mac] = other_row - 1
+        self._sensor_state.pop(mac, None)
+
+        combo_index = self.freq_target_combo.findData(mac)
+        if combo_index >= 0:
+            self.freq_target_combo.removeItem(combo_index)
 
     def _ensure_row(self, mac):
         """Returns the row index for `mac`, creating a new row (and

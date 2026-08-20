@@ -1,7 +1,6 @@
 #pragma once
 
-// Comparing the ToF (VL53L1X) and ultrasonic (HC-SR04) sensors -- flip
-// this to 1 and reflash to switch which one this build uses.
+// Comparing the ToF (VL53L1X) and ultrasonic (HC-SR04) sensors -- flip depending on what you are flashing.
 #define SENSOR_TYPE_ULTRASONIC 1
 
 #if SENSOR_TYPE_ULTRASONIC

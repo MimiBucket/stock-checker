@@ -41,6 +41,21 @@ typedef enum {
 // logger's next reboot without the PC having to re-add it.
 espnow_add_sensor_result_t espnow_comm_add_sensor(const uint8_t mac[6]);
 
+typedef enum {
+    ESPNOW_REMOVE_SENSOR_OK = 0,
+    ESPNOW_REMOVE_SENSOR_NOT_FOUND,
+} espnow_remove_sensor_result_t;
+
+// Unregisters a sensor at runtime -- e.g. for isolating whether a
+// particular sensor's traffic is contributing to logger instability,
+// without a rebuild/reflash. Also removes it as an ESP-NOW peer.
+// If `mac` was registered via espnow_comm_add_sensor(), it's dropped from
+// NVS too so it doesn't come back on the logger's next reboot. A mac from
+// the compiled-in list passed to espnow_comm_init() isn't persisted
+// there, so it reappears after the next reboot -- this call only removes
+// it for the current session.
+espnow_remove_sensor_result_t espnow_comm_remove_sensor(const uint8_t mac[6]);
+
 // Mirrors espnow_comm_set_schedule's mac semantics.
 void espnow_comm_get_schedule(const uint8_t mac[6], uint32_t *interval_sec_out, time_t *anchor_epoch_out);
 
@@ -49,20 +64,26 @@ void espnow_comm_get_schedule(const uint8_t mac[6], uint32_t *interval_sec_out, 
 // answering provisioning requests).
 void espnow_comm_start_processing_task(void);
 
-// Non-blocking check: has a new sensor reading been processed since the
-// last call? If so, returns true and fills in the details, so pc_comm_task
-// can forward it to the PC app.
+// Non-blocking pop of the oldest not-yet-delivered sensor reading (FIFO,
+// backed by a real queue -- readings from multiple sensors arriving close
+// together each get their own slot rather than clobbering one another).
+// Returns false if none are pending. Call this in a loop, not just once
+// per poll tick, if more than one reading might be waiting.
 bool espnow_comm_get_latest_reading(uint8_t *mac_out, uint16_t *distance_mm_out);
 
-// Non-blocking check: has a sensor announced itself for provisioning
-// (and been sent an interval) since the last call? If so, returns true
-// and fills in its MAC, so pc_comm_task can forward a PROVISIONING
-// notice to the PC app -- purely informational/visibility, the sensor
-// has already been answered by the time this fires.
+// Non-blocking pop of the oldest not-yet-delivered provisioning event
+// (same FIFO-queue backing as espnow_comm_get_latest_reading). Purely
+// informational/visibility -- the sensor has already been answered by the
+// time this fires. Call in a loop if more than one might be pending.
 bool espnow_comm_get_latest_provisioning_event(uint8_t *mac_out);
 
 // How many sensors were registered via espnow_comm_init().
 int espnow_comm_get_sensor_count(void);
+
+// How many raw packets are currently sitting in the rx queue, waiting for
+// espnow_process_task to drain them. Debug/diagnostic use -- a
+// consistently non-zero value means the processing task is falling behind.
+int espnow_comm_get_rx_queue_depth(void);
 
 // Fills in the MAC, current interval, and current anchor for sensor
 // `index` (0..count-1, see espnow_comm_get_sensor_count()). Returns false

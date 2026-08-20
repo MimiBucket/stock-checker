@@ -95,11 +95,16 @@ static uint32_t s_default_interval_sec = 30;
 static time_t s_default_anchor_epoch = 0;
 
 static QueueHandle_t s_rx_queue = NULL;
-static volatile bool s_new_reading_available = false;
-static latest_reading_t s_latest_reading;
 
-static volatile bool s_provisioning_event_available = false;
-static uint8_t s_provisioning_event_mac[6];
+// Real bounded queues, not a single-slot "latest value" mailbox -- with a
+// mailbox, a second reading/event processed before pc_comm_task's next
+// poll silently overwrites the first with no drop indication anywhere.
+// Sized generously since each entry is tiny and pc_comm_task drains one
+// per loop iteration (every ~50ms), well ahead of how often sensors report.
+#define ESPNOW_COMM_READING_QUEUE_LEN 20
+#define ESPNOW_COMM_PROVISIONING_QUEUE_LEN 10
+static QueueHandle_t s_reading_queue = NULL;
+static QueueHandle_t s_provisioning_queue = NULL;
 
 static int find_sensor_slot(const uint8_t mac[6]) {
     for (int i = 0; i < s_sensor_count; i++) {
@@ -164,6 +169,10 @@ void espnow_comm_get_schedule(const uint8_t mac[6], uint32_t *interval_sec_out, 
 
 int espnow_comm_get_sensor_count(void) {
     return s_sensor_count;
+}
+
+int espnow_comm_get_rx_queue_depth(void) {
+    return s_rx_queue ? (int)uxQueueMessagesWaiting(s_rx_queue) : 0;
 }
 
 bool espnow_comm_get_sensor_info(int index, uint8_t mac_out[6], uint32_t *interval_sec_out, time_t *anchor_epoch_out) {
@@ -279,6 +288,51 @@ espnow_add_sensor_result_t espnow_comm_add_sensor(const uint8_t mac[6]) {
     return ESPNOW_ADD_SENSOR_OK;
 }
 
+espnow_remove_sensor_result_t espnow_comm_remove_sensor(const uint8_t mac[6]) {
+    int slot = find_sensor_slot(mac);
+    if (slot < 0) {
+        return ESPNOW_REMOVE_SENSOR_NOT_FOUND;
+    }
+
+    esp_now_del_peer(mac);
+
+    // Shift everything after slot down by one to keep s_sensors packed --
+    // espnow_comm_get_sensor_info() and pc_comm_send_all_freq/sensor_list
+    // iterate 0..count-1.
+    for (int i = slot; i < s_sensor_count - 1; i++) {
+        s_sensors[i] = s_sensors[i + 1];
+    }
+    s_sensor_count--;
+
+    // If this mac was added at runtime (persisted via
+    // espnow_comm_add_sensor()), drop it from NVS too so it doesn't come
+    // back on the logger's next reboot. A mac from the compiled-in list
+    // simply won't be found here -- that's expected, since this is a
+    // runtime-only removal, not a permanent deregistration.
+    uint8_t macs[ESPNOW_COMM_MAX_SENSORS][6];
+    size_t len = 0;
+    nvs_handle_t handle;
+    if (nvs_open(ADDED_SENSORS_NVS_NAMESPACE, NVS_READONLY, &handle) == ESP_OK) {
+        len = sizeof(macs);
+        if (nvs_get_blob(handle, ADDED_SENSORS_NVS_KEY, macs, &len) != ESP_OK) {
+            len = 0;
+        }
+        nvs_close(handle);
+    }
+    int count = (int)(len / 6);
+    for (int i = 0; i < count; i++) {
+        if (memcmp(macs[i], mac, 6) == 0) {
+            for (int j = i; j < count - 1; j++) {
+                memcpy(macs[j], macs[j + 1], 6);
+            }
+            save_added_sensor_macs(macs, count - 1);
+            break;
+        }
+    }
+
+    return ESPNOW_REMOVE_SENSOR_OK;
+}
+
 // Kept deliberately trivial — just copies the packet off the driver's
 // buffer and pushes it into the queue. No math, no esp_now_send() here,
 // so this callback returns fast regardless of how busy the processing
@@ -288,6 +342,13 @@ static void on_data_recv(const esp_now_recv_info_t *info, const uint8_t *data, i
         return;
     }
     uint8_t type = data[0];
+
+    // Logs every packet the radio hands us, before any filtering -- the
+    // fastest way to tell "sensor never transmitted" apart from "it
+    // transmitted but got dropped/overwritten downstream".
+    ESP_EARLY_LOGI(TAG, "RX from %02x:%02x:%02x:%02x:%02x:%02x type=%d len=%d",
+                   info->src_addr[0], info->src_addr[1], info->src_addr[2],
+                   info->src_addr[3], info->src_addr[4], info->src_addr[5], type, len);
 
     rx_item_t item = {0};
     memcpy(item.src_mac, info->src_addr, 6);
@@ -301,12 +362,16 @@ static void on_data_recv(const esp_now_recv_info_t *info, const uint8_t *data, i
         return; // unrecognized or malformed packet, drop it
     }
 
-    xQueueSendFromISR(s_rx_queue, &item, NULL); // safe to call from a driver callback context
+    if (xQueueSendFromISR(s_rx_queue, &item, NULL) != pdTRUE) { // safe to call from a driver callback context
+        ESP_EARLY_LOGW(TAG, "rx_queue full, dropped packet from %02x:%02x:%02x:%02x:%02x:%02x type=%d",
+                       info->src_addr[0], info->src_addr[1], info->src_addr[2],
+                       info->src_addr[3], info->src_addr[4], info->src_addr[5], type);
+    }
 }
 
 // This is where the actual work happens: drift calculation, sending the
-// correction (or provisioning ack) back, and updating the "latest
-// reading" / "latest provisioning event" mailboxes for pc_comm_task.
+// correction (or provisioning ack) back, and pushing onto the reading /
+// provisioning-event queues that pc_comm_task drains.
 void espnow_process_task(void *arg) {
     rx_item_t item;
     while (1) {
@@ -327,15 +392,21 @@ void espnow_process_task(void *arg) {
 
             if (item.type == PKT_SENSOR_DATA) {
                 uint32_t adjusted_interval = seconds_until_next_slot(sensor->interval_sec, sensor->anchor_epoch, actual_arrival);
-                ESP_LOGI(TAG, "Processed reading from %02x:%02x:...: %d mm, next wake in %lu sec",
-                         item.src_mac[0], item.src_mac[1], item.distance_mm, (unsigned long)adjusted_interval);
+                ESP_LOGI(TAG, "Processed reading from %02x:%02x:%02x:%02x:%02x:%02x: %d mm, next wake in %lu sec, rx_queue depth=%d",
+                         item.src_mac[0], item.src_mac[1], item.src_mac[2], item.src_mac[3], item.src_mac[4], item.src_mac[5],
+                         item.distance_mm, (unsigned long)adjusted_interval, (int)uxQueueMessagesWaiting(s_rx_queue));
 
                 correction_packet_t corr = { .type = PKT_CORRECTION, .adjusted_interval_sec = adjusted_interval };
                 esp_now_send(item.src_mac, (uint8_t *)&corr, sizeof(corr));
 
-                memcpy(s_latest_reading.mac, item.src_mac, 6);
-                s_latest_reading.distance_mm = item.distance_mm;
-                s_new_reading_available = true;
+                latest_reading_t reading;
+                memcpy(reading.mac, item.src_mac, 6);
+                reading.distance_mm = item.distance_mm;
+                if (xQueueSend(s_reading_queue, &reading, 0) != pdTRUE) {
+                    ESP_LOGW(TAG, "reading_queue full, dropped reading from %02x:%02x:%02x:%02x:%02x:%02x",
+                             item.src_mac[0], item.src_mac[1], item.src_mac[2],
+                             item.src_mac[3], item.src_mac[4], item.src_mac[5]);
+                }
 
             } else if (item.type == PKT_PROVISION_REQUEST) {
                 // Align a freshly-provisioned sensor to the schedule grid
@@ -353,34 +424,34 @@ void espnow_process_task(void *arg) {
                 ESP_LOGI(TAG, "Provisioned sensor %02x:%02x:...: interval %lu sec, first wake in %lu sec",
                          item.src_mac[0], item.src_mac[1], (unsigned long)sensor->interval_sec, (unsigned long)start_delay);
 
-                memcpy(s_provisioning_event_mac, item.src_mac, 6);
-                s_provisioning_event_available = true;
+                if (xQueueSend(s_provisioning_queue, item.src_mac, 0) != pdTRUE) {
+                    ESP_LOGW(TAG, "provisioning_queue full, dropped event from %02x:%02x:%02x:%02x:%02x:%02x",
+                             item.src_mac[0], item.src_mac[1], item.src_mac[2],
+                             item.src_mac[3], item.src_mac[4], item.src_mac[5]);
+                }
             }
         }
     }
 }
 
 bool espnow_comm_get_latest_reading(uint8_t *mac_out, uint16_t *distance_mm_out) {
-    if (!s_new_reading_available) {
+    latest_reading_t reading;
+    if (xQueueReceive(s_reading_queue, &reading, 0) != pdTRUE) {
         return false;
     }
-    memcpy(mac_out, s_latest_reading.mac, 6);
-    *distance_mm_out = s_latest_reading.distance_mm;
-    s_new_reading_available = false; // consumed
+    memcpy(mac_out, reading.mac, 6);
+    *distance_mm_out = reading.distance_mm;
     return true;
 }
 
 bool espnow_comm_get_latest_provisioning_event(uint8_t *mac_out) {
-    if (!s_provisioning_event_available) {
-        return false;
-    }
-    memcpy(mac_out, s_provisioning_event_mac, 6);
-    s_provisioning_event_available = false; // consumed
-    return true;
+    return xQueueReceive(s_provisioning_queue, mac_out, 0) == pdTRUE;
 }
 
 void espnow_comm_start_processing_task(void) {
     s_rx_queue = xQueueCreate(10, sizeof(rx_item_t)); // holds up to 10 pending packets
+    s_reading_queue = xQueueCreate(ESPNOW_COMM_READING_QUEUE_LEN, sizeof(latest_reading_t));
+    s_provisioning_queue = xQueueCreate(ESPNOW_COMM_PROVISIONING_QUEUE_LEN, 6); // 6-byte MAC per event
     xTaskCreate(espnow_process_task, "espnow_process_task", 4096, NULL, 5, NULL);
 }
 
