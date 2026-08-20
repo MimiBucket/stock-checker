@@ -60,11 +60,13 @@ ALL_SENSORS_TARGET = "ALL"
 
 # --- Stock status thresholds --------------------------------------------
 # Distance is measured by the ToF sensor from itself down to whatever is
-# below it, so a LARGER distance means an emptier bin. These are simple
-# global constants for now; a later version could make them per-sensor
-# and editable from the UI (e.g. one bin might be deeper than another).
-STOCK_LOW_THRESHOLD_MM = 150     # distance >= this => "Low"
-STOCK_EMPTY_THRESHOLD_MM = 200   # distance >= this => "Empty"
+# below it, so a LARGER distance means an emptier bin. User-editable at
+# runtime (see the threshold spinboxes/_on_set_threshold_clicked) and sent
+# to the logger via SETTHRESHOLD, which is also what a sensor's LED
+# reacts to -- these defaults match the logger's own until a THRESHOLD
+# line (sent on connect, or after a change) says otherwise.
+DEFAULT_LOW_THRESHOLD_MM = 200     # distance >= this => "Low"
+DEFAULT_EMPTY_THRESHOLD_MM = 300   # distance >= this => "Empty"
 
 # --- Activity/overdue detection ------------------------------------------
 # A sensor deep-sleeps between reports, so there's no way to ask it "are
@@ -195,11 +197,11 @@ QStatusBar {
 """
 
 
-def stock_status_for(distance_mm):
+def stock_status_for(distance_mm, low_threshold_mm, empty_threshold_mm):
     """Maps a raw distance reading to a human status label."""
-    if distance_mm >= STOCK_EMPTY_THRESHOLD_MM:
+    if distance_mm >= empty_threshold_mm:
         return "Empty"
-    if distance_mm >= STOCK_LOW_THRESHOLD_MM:
+    if distance_mm >= low_threshold_mm:
         return "Low"
     return "OK"
 
@@ -240,6 +242,14 @@ class MainWindow(QMainWindow):
         self._freq_request_confirmed = True
         self._add_sensor_confirmed = True
         self._remove_sensor_confirmed = True
+        self._threshold_confirmed = True
+
+        # Local mirror of the logger's stock status thresholds -- kept in
+        # sync via the THRESHOLD line (sent on connect, and again after a
+        # SETTHRESHOLD), not just assumed from these UI defaults, so a
+        # reconnecting app doesn't silently override what's already set.
+        self._low_threshold_mm = DEFAULT_LOW_THRESHOLD_MM
+        self._empty_threshold_mm = DEFAULT_EMPTY_THRESHOLD_MM
 
         # True only while the worker currently holds a confirmed logger
         # connection -- separate from "self._worker is not None", since
@@ -281,6 +291,7 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(self._build_connection_bar())
         layout.addWidget(self._build_frequency_group())
+        layout.addLayout(self._build_threshold_bar())
         layout.addLayout(self._build_sensor_table_bar())
         layout.addWidget(self._build_sensor_table())
 
@@ -355,6 +366,39 @@ class MainWindow(QMainWindow):
         row.addWidget(self.set_freq_button)
 
         return group
+
+    def _build_threshold_bar(self):
+        # Deliberately a plain row, not a titled QGroupBox like Reporting
+        # Frequency above -- this should read as a minor/secondary control,
+        # discoverable but not competing for attention with the main
+        # connection/frequency/sensor controls.
+        row = QHBoxLayout()
+        row.setSpacing(8)
+
+        label = QLabel("Stock thresholds:")
+        label.setStyleSheet(f"color: {COLOR_MUTED};")
+        row.addWidget(label)
+
+        row.addWidget(QLabel("Low (mm):"))
+        self.low_threshold_spinbox = QSpinBox()
+        self.low_threshold_spinbox.setRange(1, 100000)
+        self.low_threshold_spinbox.setValue(DEFAULT_LOW_THRESHOLD_MM)
+        row.addWidget(self.low_threshold_spinbox)
+
+        row.addWidget(QLabel("Empty (mm):"))
+        self.empty_threshold_spinbox = QSpinBox()
+        self.empty_threshold_spinbox.setRange(1, 100000)
+        self.empty_threshold_spinbox.setValue(DEFAULT_EMPTY_THRESHOLD_MM)
+        row.addWidget(self.empty_threshold_spinbox)
+
+        self.set_threshold_button = QPushButton("Set Thresholds")
+        self.set_threshold_button.setObjectName("secondaryButton")
+        self.set_threshold_button.setEnabled(False)  # enabled once connected
+        self.set_threshold_button.clicked.connect(self._on_set_threshold_clicked)
+        row.addWidget(self.set_threshold_button)
+
+        row.addStretch()
+        return row
 
     def _build_sensor_table_bar(self):
         row = QHBoxLayout()
@@ -434,6 +478,7 @@ class MainWindow(QMainWindow):
         self._worker.provisioning_started.connect(self._on_provisioning_started)
         self._worker.add_sensor_result.connect(self._on_add_sensor_result)
         self._worker.remove_sensor_result.connect(self._on_remove_sensor_result)
+        self._worker.threshold_received.connect(self._on_threshold_received)
         self._worker.start()
 
         self.connect_button.setText("Disconnect")
@@ -473,6 +518,7 @@ class MainWindow(QMainWindow):
             self._worker.provisioning_started,
             self._worker.add_sensor_result,
             self._worker.remove_sensor_result,
+            self._worker.threshold_received,
         ):
             signal.disconnect()
         self._worker.stop()
@@ -484,6 +530,7 @@ class MainWindow(QMainWindow):
         self.set_freq_button.setEnabled(False)
         self.add_sensor_button.setEnabled(False)
         self.remove_sensor_button.setEnabled(False)
+        self.set_threshold_button.setEnabled(False)
 
     def _on_scanning(self, detail):
         self._set_connection_state("scanning", detail)
@@ -494,6 +541,7 @@ class MainWindow(QMainWindow):
         self.set_freq_button.setEnabled(True)
         self.add_sensor_button.setEnabled(True)
         self.remove_sensor_button.setEnabled(True)
+        self.set_threshold_button.setEnabled(True)
 
     def _on_serial_disconnected(self, reason):
         logger.warning("Disconnected: %s", reason)
@@ -515,6 +563,7 @@ class MainWindow(QMainWindow):
         self.set_freq_button.setEnabled(False)
         self.add_sensor_button.setEnabled(False)
         self.remove_sensor_button.setEnabled(False)
+        self.set_threshold_button.setEnabled(False)
 
     def _set_connection_state(self, state, detail):
         color = {"connected": COLOR_GOOD, "scanning": COLOR_WARN, "disconnected": COLOR_BAD}[state]
@@ -707,6 +756,51 @@ class MainWindow(QMainWindow):
         logger.warning("Remove sensor %s failed: %s", mac, status)
         QMessageBox.warning(self, "Remove Sensor", f"{mac} {reasons.get(status, status)}.")
 
+    def _on_set_threshold_clicked(self):
+        if not self._connected:
+            return
+        low_mm = self.low_threshold_spinbox.value()
+        empty_mm = self.empty_threshold_spinbox.value()
+        if low_mm >= empty_mm:
+            QMessageBox.warning(
+                self, "Set Thresholds",
+                "Low threshold must be smaller than Empty threshold (distance grows as the bin empties)."
+            )
+            return
+        logger.info("Requesting logger set thresholds: low=%d empty=%d", low_mm, empty_mm)
+        self.statusBar().showMessage(f"Requesting to set thresholds (low={low_mm}, empty={empty_mm})...")
+        self.set_threshold_button.setEnabled(False)
+        self._threshold_confirmed = False
+        QTimer.singleShot(REQUEST_TIMEOUT_MS, self._check_threshold_timeout)
+        self._worker.send_set_threshold(low_mm, empty_mm)
+
+    def _check_threshold_timeout(self):
+        if self._connected:
+            self.set_threshold_button.setEnabled(True)
+        if not self._threshold_confirmed:
+            self.statusBar().showMessage(
+                "No response from logger to the Set Thresholds request -- it may not have gone through.", 6000)
+
+    def _on_threshold_received(self, low_mm, empty_mm):
+        self._threshold_confirmed = True
+        self._low_threshold_mm = low_mm
+        self._empty_threshold_mm = empty_mm
+        # Reflect the logger's actual current value in the spinboxes --
+        # covers both the initial-connect announce (so the UI shows what's
+        # really set, not just its own default) and a confirmed change.
+        self.low_threshold_spinbox.setValue(low_mm)
+        self.empty_threshold_spinbox.setValue(empty_mm)
+        logger.info("Logger thresholds: low=%d empty=%d", low_mm, empty_mm)
+        self.statusBar().showMessage(f"Thresholds: low={low_mm}mm, empty={empty_mm}mm", 5000)
+
+        # Re-derive every row's displayed status against the new
+        # thresholds immediately, rather than waiting for each sensor's
+        # next report to happen to arrive.
+        for mac, row in self._row_for_mac.items():
+            distance_mm = self._sensor_state.get(mac, {}).get("last_distance_mm")
+            if distance_mm is not None:
+                self._apply_status_to_row(row, mac, distance_mm)
+
     # ----------------------------------------------------------------
     # Sensor table
     # ----------------------------------------------------------------
@@ -761,7 +855,7 @@ class MainWindow(QMainWindow):
         self.table.setItem(row, COL_UPDATED, QTableWidgetItem("--"))
 
         self._row_for_mac[mac] = row
-        self._sensor_state[mac] = {"last_data_ts": None, "interval_sec": None, "provisioning": False}
+        self._sensor_state[mac] = {"last_data_ts": None, "interval_sec": None, "provisioning": False, "last_distance_mm": None}
         self._refresh_freq_target_combo(mac)
         self._update_activity_cell(mac)
         return row
@@ -773,20 +867,27 @@ class MainWindow(QMainWindow):
 
     def _on_data_received(self, mac, distance_mm):
         row = self._ensure_row(mac)
-        status = stock_status_for(distance_mm)
         timestamp_text = time.strftime("%H:%M:%S")
 
         self.table.item(row, COL_READING).setText(str(distance_mm))
-
-        status_item = self.table.item(row, COL_STATUS)
-        status_item.setText(status)
-        status_item.setForeground(QColor(STATUS_COLORS[status]))
-
+        self._apply_status_to_row(row, mac, distance_mm)
         self.table.item(row, COL_UPDATED).setText(timestamp_text)
 
         state = self._sensor_state[mac]
         state["last_data_ts"] = time.time()
         state["provisioning"] = False
+        state["last_distance_mm"] = distance_mm
+
+    def _apply_status_to_row(self, row, mac, distance_mm):
+        """Recomputes and displays the Stock Status cell for one row from
+        a distance reading and the current thresholds. Split out from
+        _on_data_received so _on_threshold_received can reuse it to
+        refresh every row's status in place when the thresholds change,
+        without needing a fresh DATA line first."""
+        status = stock_status_for(distance_mm, self._low_threshold_mm, self._empty_threshold_mm)
+        status_item = self.table.item(row, COL_STATUS)
+        status_item.setText(status)
+        status_item.setForeground(QColor(STATUS_COLORS[status]))
         self._update_activity_cell(mac)
 
     def _on_provisioning_started(self, mac):

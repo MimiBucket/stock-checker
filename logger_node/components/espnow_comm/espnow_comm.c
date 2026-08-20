@@ -19,7 +19,7 @@ static const char *TAG = "logger_espnow_comm";
 // if you change one side, change the other.
 typedef enum {
     PKT_SENSOR_DATA = 1,       // sensor -> logger: a reading
-    PKT_CORRECTION = 2,        // logger -> sensor: drift-corrected next interval (normal operation)
+    PKT_REPLY = 2,             // logger -> sensor: drift-corrected next interval + stock status (normal operation)
     PKT_PROVISION_REQUEST = 3, // sensor -> logger: "I don't have an interval yet, assign me one"
     PKT_PROVISION_ACK = 4,     // logger -> sensor: assigned interval (+ optional start delay)
 } espnow_packet_type_t;
@@ -33,9 +33,10 @@ typedef struct __attribute__((packed)) {
 } sensor_data_packet_t;
 
 typedef struct __attribute__((packed)) {
-    uint8_t type; // PKT_CORRECTION
+    uint8_t type; // PKT_REPLY
     uint32_t adjusted_interval_sec;
-} correction_packet_t;
+    uint8_t low_or_empty; // 0 == OK, nonzero == Low or Empty (see s_low_threshold_mm/s_empty_threshold_mm)
+} reply_packet_t;
 
 typedef struct __attribute__((packed)) {
     uint8_t type; // PKT_PROVISION_REQUEST
@@ -94,6 +95,15 @@ static int s_sensor_count = 0;
 static uint32_t s_default_interval_sec = 30;
 static time_t s_default_anchor_epoch = 0;
 
+// Stock status thresholds, in mm from the sensor (larger distance == less
+// material == emptier bin). User-configurable from the PC app (SETTHRESHOLD);
+// not persisted to NVS, same as s_default_interval_sec/s_default_anchor_epoch
+// above -- resets to these defaults on a logger reboot until the PC
+// reconnects and (if it wants) resends them. The sensor itself never sees
+// these numbers, only the OK/low-or-empty result -- see espnow_comm_set_thresholds.
+static uint32_t s_low_threshold_mm = 200;
+static uint32_t s_empty_threshold_mm = 300;
+
 static QueueHandle_t s_rx_queue = NULL;
 
 // Real bounded queues, not a single-slot "latest value" mailbox -- with a
@@ -117,7 +127,7 @@ static int find_sensor_slot(const uint8_t mac[6]) {
 
 // Seconds until the next scheduled wake strictly after `now`, for a
 // sensor whose valid wake times are anchor_epoch + k*interval_sec. Used
-// for both the ongoing PKT_CORRECTION reply and the initial
+// for both the ongoing PKT_REPLY and the initial
 // PKT_PROVISION_ACK's start_delay_sec, so a sensor always ends up on the
 // same aligned grid regardless of what moment it happened to check in.
 static uint32_t seconds_until_next_slot(uint32_t interval_sec, time_t anchor_epoch, time_t now) {
@@ -165,6 +175,16 @@ void espnow_comm_get_schedule(const uint8_t mac[6], uint32_t *interval_sec_out, 
         *interval_sec_out = s_default_interval_sec;
         *anchor_epoch_out = s_default_anchor_epoch;
     }
+}
+
+void espnow_comm_set_thresholds(uint32_t low_mm, uint32_t empty_mm) {
+    s_low_threshold_mm = low_mm;
+    s_empty_threshold_mm = empty_mm;
+}
+
+void espnow_comm_get_thresholds(uint32_t *low_mm_out, uint32_t *empty_mm_out) {
+    *low_mm_out = s_low_threshold_mm;
+    *empty_mm_out = s_empty_threshold_mm;
 }
 
 int espnow_comm_get_sensor_count(void) {
@@ -370,7 +390,7 @@ static void on_data_recv(const esp_now_recv_info_t *info, const uint8_t *data, i
 }
 
 // This is where the actual work happens: drift calculation, sending the
-// correction (or provisioning ack) back, and pushing onto the reading /
+// reply (or provisioning ack) back, and pushing onto the reading /
 // provisioning-event queues that pc_comm_task drains.
 void espnow_process_task(void *arg) {
     rx_item_t item;
@@ -396,8 +416,15 @@ void espnow_process_task(void *arg) {
                          item.src_mac[0], item.src_mac[1], item.src_mac[2], item.src_mac[3], item.src_mac[4], item.src_mac[5],
                          item.distance_mm, (unsigned long)adjusted_interval, (int)uxQueueMessagesWaiting(s_rx_queue));
 
-                correction_packet_t corr = { .type = PKT_CORRECTION, .adjusted_interval_sec = adjusted_interval };
-                esp_now_send(item.src_mac, (uint8_t *)&corr, sizeof(corr));
+                // Empty implies low too (distance only gets larger as the bin
+                // empties), so just the low threshold decides on/off here.
+                bool low_or_empty = item.distance_mm >= s_low_threshold_mm;
+                reply_packet_t reply = {
+                    .type = PKT_REPLY,
+                    .adjusted_interval_sec = adjusted_interval,
+                    .low_or_empty = low_or_empty ? 1 : 0,
+                };
+                esp_now_send(item.src_mac, (uint8_t *)&reply, sizeof(reply));
 
                 latest_reading_t reading;
                 memcpy(reading.mac, item.src_mac, 6);

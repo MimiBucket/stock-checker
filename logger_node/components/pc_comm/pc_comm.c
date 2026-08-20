@@ -114,6 +114,12 @@ void pc_comm_send_sensor_list(void) {
     console_print_line("%s", line);
 }
 
+void pc_comm_send_threshold(void) {
+    uint32_t low_mm, empty_mm;
+    espnow_comm_get_thresholds(&low_mm, &empty_mm);
+    console_print_line("THRESHOLD %u %u\n", (unsigned)low_mm, (unsigned)empty_mm);
+}
+
 // Parses "xx:xx:xx:xx:xx:xx" into 6 raw bytes. Returns false (and leaves
 // mac_out untouched) if str isn't a well-formed MAC string.
 static bool parse_mac(const char *str, uint8_t mac_out[6]) {
@@ -201,6 +207,20 @@ static bool check_and_handle_pc_commands(void) {
             } else {
                 ESP_LOGW(TAG, "ADDSENSOR %s failed: %s", raw, kResultNames[result]);
             }
+        }
+    } else if (strncmp((char *)data, "SETTHRESHOLD ", 13) == 0) {
+        // "SETTHRESHOLD <low_mm> <empty_mm>" -- sets the stock status
+        // thresholds used to compute the low-or-empty bit sent to sensors.
+        // Always answered by re-announcing THRESHOLD, so the PC UI can
+        // confirm the change actually took (same reasoning as ADDSENSOR).
+        long low_mm = 0, empty_mm = 0;
+        int n = sscanf((char *)data + 13, "%ld %ld", &low_mm, &empty_mm);
+        if (n == 2 && low_mm > 0 && empty_mm > 0) {
+            espnow_comm_set_thresholds((uint32_t)low_mm, (uint32_t)empty_mm);
+            pc_comm_send_threshold();
+            ESP_LOGI(TAG, "Thresholds set from PC: low=%ld empty=%ld", low_mm, empty_mm);
+        } else {
+            ESP_LOGW(TAG, "SETTHRESHOLD: malformed command");
         }
     } else if (strncmp((char *)data, "REMOVESENSOR ", 13) == 0) {
         // "REMOVESENSOR <mac>" -- unregisters a sensor at runtime, e.g. for

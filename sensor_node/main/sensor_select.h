@@ -1,7 +1,7 @@
 #pragma once
 
 // Comparing the ToF (VL53L1X) and ultrasonic (HC-SR04) sensors -- flip depending on what you are flashing.
-#define SENSOR_TYPE_ULTRASONIC 1
+#define SENSOR_TYPE_ULTRASONIC 0
 
 #if SENSOR_TYPE_ULTRASONIC
 #include "ultrasonic_sensor.h"

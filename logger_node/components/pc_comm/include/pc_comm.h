@@ -42,6 +42,13 @@ void pc_comm_send_sensor_list(void);
 // logger (already-answered by the time this is sent).
 void pc_comm_send_provisioning(const uint8_t mac[6]);
 
+// Formats and sends "THRESHOLD <low_mm> <empty_mm>" to the PC -- the
+// logger's currently-active stock status thresholds. Call once after time
+// sync completes (so a newly-connected PC learns what's already set,
+// rather than assuming its own UI default overrides it), and again after
+// a SETTHRESHOLD command.
+void pc_comm_send_threshold(void);
+
 #ifdef __cplusplus
 }
 #endif

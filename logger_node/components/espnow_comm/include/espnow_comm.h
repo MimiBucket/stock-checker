@@ -27,6 +27,13 @@ bool espnow_comm_init(const uint8_t sensor_macs[][6], int count);
 // ignored.
 void espnow_comm_set_schedule(const uint8_t mac[6], uint32_t interval_sec, time_t anchor_epoch);
 
+// Stock status thresholds (mm from the sensor; larger == emptier), used to
+// compute the low-or-empty bit sent to a sensor in its PKT_REPLY packet
+// (see espnow_comm_start_processing_task's processing task). Set from the
+// PC app (SETTHRESHOLD); defaults to 200/300 until the PC ever sends one.
+void espnow_comm_set_thresholds(uint32_t low_mm, uint32_t empty_mm);
+void espnow_comm_get_thresholds(uint32_t *low_mm_out, uint32_t *empty_mm_out);
+
 typedef enum {
     ESPNOW_ADD_SENSOR_OK = 0,
     ESPNOW_ADD_SENSOR_ALREADY_REGISTERED,
@@ -60,7 +67,7 @@ espnow_remove_sensor_result_t espnow_comm_remove_sensor(const uint8_t mac[6]);
 void espnow_comm_get_schedule(const uint8_t mac[6], uint32_t *interval_sec_out, time_t *anchor_epoch_out);
 
 // Call this once, after espnow_comm_init(), to start the task that
-// processes received sensor packets (drift calc + correction send, and
+// processes received sensor packets (drift calc + reply send, and
 // answering provisioning requests).
 void espnow_comm_start_processing_task(void);
 

@@ -75,7 +75,7 @@ RESCAN_INTERVAL_SEC = 2.0
 # not just any device that happens to print text (e.g. a sensor node's
 # own plain ESP_LOG console output, which is unrelated chatter as far as
 # the PC app is concerned).
-_RECOGNIZED_LINE_PREFIXES = ("DATA ", "SENSORS ", "FREQ ", "PROVISIONING ", "ADDSENSOR_RESULT ", "REMOVESENSOR_RESULT ")
+_RECOGNIZED_LINE_PREFIXES = ("DATA ", "SENSORS ", "FREQ ", "PROVISIONING ", "ADDSENSOR_RESULT ", "REMOVESENSOR_RESULT ", "THRESHOLD ")
 
 # Matches "xx:xx:xx:xx:xx:xx" (case-insensitive hex). Used to reject a
 # malformed/corrupted field instead of letting garbage into the UI as if
@@ -130,6 +130,7 @@ class SerialWorker(QThread):
     provisioning_started = Signal(str)   # mac address of sensor that just started provisioning (PROVISIONING)
     add_sensor_result = Signal(str, str) # status ("ok"/"already_registered"/"table_full"/"peer_add_failed"/"bad_mac"), mac (ADDSENSOR_RESULT)
     remove_sensor_result = Signal(str, str) # status ("ok"/"not_found"/"bad_mac"), mac (REMOVESENSOR_RESULT)
+    threshold_received = Signal(int, int) # low_mm, empty_mm (THRESHOLD)
 
     def __init__(self, port_name=None, baud_rate=DEFAULT_BAUD_RATE, parent=None):
         super().__init__(parent)
@@ -183,6 +184,14 @@ class SerialWorker(QThread):
         session if it's from the logger's compiled-in sensor list; it
         reappears after the logger's next reboot."""
         self.send_line(f"REMOVESENSOR {mac}")
+
+    def send_set_threshold(self, low_mm, empty_mm): # pc -> logger
+        """Ask the logger to change its stock status thresholds (mm from
+        the sensor -- larger distance means an emptier bin). The logger
+        answers by re-announcing THRESHOLD (see threshold_received
+        signal), which also propagates to sensors' LEDs on their next
+        report."""
+        self.send_line(f"SETTHRESHOLD {int(low_mm)} {int(empty_mm)}")
 
     def stop(self): # use case: GUI is closing, or user hit "Disconnect"
         """Ask the read loop to exit, then block until the thread has
@@ -355,6 +364,8 @@ class SerialWorker(QThread):
             self._handle_addsensor_result_line(text)
         elif text.startswith("REMOVESENSOR_RESULT "):
             self._handle_removesensor_result_line(text)
+        elif text.startswith("THRESHOLD "):
+            self._handle_threshold_line(text)
         else:
             logger.debug("Ignoring unrecognized line: %r", text)
 
@@ -450,3 +461,20 @@ class SerialWorker(QThread):
             return
         status, mac = parts
         self.remove_sensor_result.emit(status, mac)
+
+    def _handle_threshold_line(self, text):
+        """
+            THRESHOLD <low_mm> <empty_mm>
+            Example: "THRESHOLD 200 300"
+        """
+        parts = text[len("THRESHOLD "):].split()
+        if len(parts) != 2:
+            logger.warning("Malformed THRESHOLD line: %r", text)
+            return
+        try:
+            low_mm = int(parts[0])
+            empty_mm = int(parts[1])
+        except ValueError:
+            logger.warning("Malformed THRESHOLD line: %r", text)
+            return
+        self.threshold_received.emit(low_mm, empty_mm)

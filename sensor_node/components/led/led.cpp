@@ -6,10 +6,6 @@
 
 static const char *TAG = "led";
 
-// Distance increases as the bin empties (less material between sensor and
-// target). Kept in sync with STOCK_LOW_THRESHOLD_MM in pc/ui.py.
-#define LOW_STOCK_THRESHOLD_MM 150
-
 bool led_init(void) {
     // A hold from the previous led_hold_for_sleep() survives waking, and
     // gpio_config()/gpio_set_level() have no effect on a held pin -- release
@@ -31,8 +27,7 @@ bool led_init(void) {
     return true;
 }
 
-void led_update(uint16_t distance_mm) {
-    bool low_or_empty = (distance_mm >= LOW_STOCK_THRESHOLD_MM);
+void led_update(bool low_or_empty) {
     gpio_set_level(LED_GPIO_PIN, low_or_empty ? 1 : 0);
 }
 

@@ -13,7 +13,7 @@ static const char *TAG = "sensor_espnow_comm";
 // looking at. Mirrored exactly in the logger's espnow_comm.c.
 typedef enum {
     PKT_SENSOR_DATA = 1,       // sensor -> logger: a reading
-    PKT_CORRECTION = 2,        // logger -> sensor: drift-corrected next interval (normal operation)
+    PKT_REPLY = 2,             // logger -> sensor: drift-corrected next interval + stock status (normal operation)
     PKT_PROVISION_REQUEST = 3, // sensor -> logger: "I don't have an interval yet, assign me one"
     PKT_PROVISION_ACK = 4,     // logger -> sensor: assigned interval (+ optional start delay)
 } espnow_packet_type_t;
@@ -26,9 +26,10 @@ typedef struct __attribute__((packed)) {
 } sensor_data_packet_t;
 
 typedef struct __attribute__((packed)) {
-    uint8_t type; // PKT_CORRECTION
+    uint8_t type; // PKT_REPLY
     uint32_t adjusted_interval_sec;
-} correction_packet_t;
+    uint8_t low_or_empty; // 0 == OK, nonzero == Low or Empty (logger-computed)
+} reply_packet_t;
 
 typedef struct __attribute__((packed)) {
     uint8_t type; // PKT_PROVISION_REQUEST
@@ -42,8 +43,9 @@ typedef struct __attribute__((packed)) {
 
 static uint8_t s_logger_mac[6];
 
-static volatile bool s_correction_received = false;
+static volatile bool s_reply_received = false;
 static uint32_t s_received_interval = 0;
+static bool s_received_low_or_empty = false;
 
 static volatile bool s_provision_ack_received = false;
 static uint32_t s_provision_interval = 0;
@@ -55,11 +57,12 @@ static void on_data_recv(const esp_now_recv_info_t *info, const uint8_t *data, i
     }
     uint8_t type = data[0];
 
-    if (type == PKT_CORRECTION && len == sizeof(correction_packet_t)) {
-        correction_packet_t pkt;
+    if (type == PKT_REPLY && len == sizeof(reply_packet_t)) {
+        reply_packet_t pkt;
         memcpy(&pkt, data, sizeof(pkt));
         s_received_interval = pkt.adjusted_interval_sec;
-        s_correction_received = true; // simple flag, checked by the polling loop below
+        s_received_low_or_empty = (pkt.low_or_empty != 0);
+        s_reply_received = true; // simple flag, checked by the polling loop below
     } else if (type == PKT_PROVISION_ACK && len == sizeof(provision_ack_packet_t)) {
         provision_ack_packet_t pkt;
         memcpy(&pkt, data, sizeof(pkt));
@@ -69,14 +72,15 @@ static void on_data_recv(const esp_now_recv_info_t *info, const uint8_t *data, i
     }
 }
 
-bool espnow_comm_listen_for_correction(uint32_t timeout_ms, uint32_t *adjusted_interval_out) {
-    s_correction_received = false;
+bool espnow_comm_listen_for_reply(uint32_t timeout_ms, uint32_t *adjusted_interval_out, bool *low_or_empty_out) {
+    s_reply_received = false;
 
     // Just poll the flag every 10ms until either it's set, or we time out.
     uint32_t waited_ms = 0;
     while (waited_ms < timeout_ms) {
-        if (s_correction_received) {
+        if (s_reply_received) {
             *adjusted_interval_out = s_received_interval;
+            *low_or_empty_out = s_received_low_or_empty;
             return true;
         }
         vTaskDelay(pdMS_TO_TICKS(10));

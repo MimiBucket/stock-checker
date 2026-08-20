@@ -90,18 +90,19 @@ void app_main(void) {
     uint16_t distance_mm = 0;
     if (distance_sensor_init() && distance_sensor_read(&distance_mm)) {
         ESP_LOGI(TAG, "Distance: %d mm", distance_mm);
-        led_update(distance_mm);
         espnow_comm_send_data(distance_mm);
     }
 
     uint32_t sleep_duration_sec = interval_sec;
     uint32_t adjusted_interval = 0;
-    if (espnow_comm_listen_for_correction(100, &adjusted_interval)) {
-        ESP_LOGI(TAG, "Got correction: %lu sec", (unsigned long)adjusted_interval);
+    bool low_or_empty = false;
+    if (espnow_comm_listen_for_reply(100, &adjusted_interval, &low_or_empty)) {
+        ESP_LOGI(TAG, "Got reply: %lu sec, low_or_empty=%d", (unsigned long)adjusted_interval, low_or_empty);
         sleep_duration_sec = adjusted_interval;
         provisioning_save(adjusted_interval); // keep NVS in sync with logger-driven changes (SETFREQ)
+        led_update(low_or_empty); // logger-computed status -- no reply, no new status, LED holds its last value
     } else {
-        ESP_LOGI(TAG, "No correction received this cycle");
+        ESP_LOGI(TAG, "No reply received this cycle");
     }
 
     distance_sensor_deinit();

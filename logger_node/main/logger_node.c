@@ -40,6 +40,7 @@ void app_main(void) {
     pc_comm_wait_for_initial_sync();
     pc_comm_send_sensor_list();
     pc_comm_send_all_freq(); // one FREQ line per sensor, so the PC starts with an accurate picture
+    pc_comm_send_threshold(); // so a reconnecting PC learns what's already set, not just its own UI default
 
     pc_comm_start_task();
 }
