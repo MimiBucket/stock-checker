@@ -363,13 +363,6 @@ static void on_data_recv(const esp_now_recv_info_t *info, const uint8_t *data, i
     }
     uint8_t type = data[0];
 
-    // Logs every packet the radio hands us, before any filtering -- the
-    // fastest way to tell "sensor never transmitted" apart from "it
-    // transmitted but got dropped/overwritten downstream".
-    ESP_EARLY_LOGI(TAG, "RX from %02x:%02x:%02x:%02x:%02x:%02x type=%d len=%d",
-                   info->src_addr[0], info->src_addr[1], info->src_addr[2],
-                   info->src_addr[3], info->src_addr[4], info->src_addr[5], type, len);
-
     rx_item_t item = {0};
     memcpy(item.src_mac, info->src_addr, 6);
     item.type = type;

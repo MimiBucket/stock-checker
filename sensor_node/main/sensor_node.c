@@ -4,27 +4,9 @@
 #include "led.h"
 #include "espnow_comm.h"
 #include "esp_sleep.h"
-#include "esp_system.h"
 #include "esp_log.h"
 
 static const char *TAG = "sensor";
-
-// TEMP diagnostic: DEEPSLEEP means a real timer wake; POWERON means a
-// monitor reconnect (DTR/RTS resets via EN); BROWNOUT confirms a brownout.
-// Remove once wake failures are root-caused.
-static void log_reset_reason(void) {
-    esp_reset_reason_t reason = esp_reset_reason();
-    const char *label = "?";
-    switch (reason) {
-        case ESP_RST_POWERON:   label = "POWERON (fresh power or EN reset, e.g. monitor reconnect)"; break;
-        case ESP_RST_DEEPSLEEP: label = "DEEPSLEEP (genuine autonomous timer wake)"; break;
-        case ESP_RST_BROWNOUT:  label = "BROWNOUT"; break;
-        case ESP_RST_SW:        label = "SW (esp_restart)"; break;
-        case ESP_RST_PANIC:     label = "PANIC"; break;
-        default: break;
-    }
-    ESP_LOGI(TAG, "Reset reason: %d (%s)", reason, label);
-}
 
 // How long an unprovisioned sensor stays awake announcing itself, and how
 // often it re-announces. Bounded so an offline logger doesn't burn
@@ -42,17 +24,7 @@ static void deep_sleep_for(uint32_t seconds) {
     esp_deep_sleep_start();
 }
 
-// TEMP: set to 1 to test bare timer-wake with no WiFi/sensor code, to
-// isolate a board/regulator fault from a WiFi-current-spike brownout.
-#define MINIMAL_SLEEP_TEST 0
-
 void app_main(void) {
-    log_reset_reason();
-#if MINIMAL_SLEEP_TEST
-    ESP_LOGI(TAG, "Minimal sleep test cycle");
-    deep_sleep_for(10);
-    return; // unreachable -- esp_deep_sleep_start() does not return
-#endif
     led_init();
     espnow_comm_init((const uint8_t *)"\x10\x52\x1C\x60\x56\xC4"); // logger MAC address
 
