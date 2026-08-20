@@ -117,12 +117,29 @@ ESP_LOGx output (boot/debug logging) shares the same UART0 and is serialized aga
 - ESP-IDF v5.0+ (both firmware projects target plain `esp32`)
 - Python 3.x
 
+**Attach the board to WSL (usbipd).** `idf.py flash`/`monitor` run from this WSL shell, but the ESP32's USB-serial port enumerates on the Windows side first — [usbipd-win](https://github.com/dorssel/usbipd-win) forwards it into WSL as a Linux device. From an **elevated** (Run as Administrator) PowerShell on Windows, with the board plugged in:
+
+```powershell
+usbipd list                              # find the board's BUSID (e.g. CP210x/CH340 USB-Serial)
+usbipd bind --busid <BUSID>              # one-time per device; requires admin
+usbipd attach --wsl --busid <BUSID>      # do this each time the board is (re)plugged
+```
+
+Back in WSL, confirm it showed up (usually `/dev/ttyUSB0` or `/dev/ttyACM0`):
+
+```bash
+dmesg | tail
+ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
+```
+
+Unplugging/replugging the board, or a Windows reboot, drops the WSL attachment — rerun `usbipd attach` (bind only needs to happen once). If `idf.py` can't open the port, check `dmesg` for permission errors — you may need `sudo usermod -a -G dialout $USER` (then re-login) or to run `idf.py` with `sudo`.
+
 **Build and flash firmware** (from each project directory):
 
 ```bash
 cd sensor_node   # or logger_node
 idf.py set-target esp32
-idf.py -p <PORT> build flash monitor
+idf.py -p <PORT> build flash monitor   # <PORT> is the /dev/ttyUSB*/ttyACM* from above
 ```
 
 Set `SENSOR_TYPE_ULTRASONIC` in `sensor_node/main/sensor_select.h` before building, depending on which distance sensor is attached. Update the logger MAC hardcoded in `sensor_node.c`'s `app_main` to match your logger before flashing sensor nodes.
@@ -156,6 +173,15 @@ python main.py
 - **Absolute anchor scheduling** (`anchor_epoch + k*interval`) instead of `next = last + interval`: self-corrects from any state, no accumulated drift. Tradeoff: the whole system must agree on wall-clock time, so a stale `SETTIME` desyncs everything.
 - **Queue + dedicated processing task on the logger:** the receive callback only pushes to a FreeRTOS queue; drift math and reply/serial output run in a separate task, keeping the radio callback fast. 
 - **Runtime peer add/remove from the desktop app**, no hardcoded MAC array: new sensors don't require reflashing the logger. 
+
+## Bugs and Difficulties
+
+- **LED didn't survive deep sleep.** GPIO output state doesn't persist through deep sleep — the pad floats when the digital domain powers down, so the indicator glitched or reset on every wake instead of holding the last stock status. Fixed by explicitly latching the pin before sleeping: `gpio_hold_en()` + `gpio_deep_sleep_hold_en()` in `led.cpp`, released with `gpio_hold_dis()` on the next wake before reconfiguring the pin.
+- **Ultrasonic sensor stopped waking up after sleep.** The HC-SR04 node worked fine awake but wouldn't respond to `TRIG` after a deep-sleep cycle, while the ToF node on the same firmware pattern was unaffected — pointed at the sensor/board itself rather than the sleep code. Root-caused to a hardware fault on that specific board; resolved by swapping the board rather than chasing it further in firmware.
+- **Brownouts on marginal USB power.** The logger (and sometimes sensor nodes) would randomly reset, with no clear firmware trigger. Diagnosed by reading `esp_reset_reason()` on every boot and logging whether it came back `BROWNOUT` vs. `POWERON`/`DEEPSLEEP`/`SW`, plus a `MINIMAL_SLEEP_TEST` build flag that stripped out WiFi/sensor code to isolate a bare timer-wake cycle from one that also spikes ESP-NOW's radio power-on current. Confirmed as a WiFi TX current spike on a weak supply; interim fix caps radio TX power to ~10 dBm (`esp_wifi_set_max_tx_power(40)`, vs. ~20 dBm default) on both node types, pending a proper power supply. The diagnostic logging was removed once root-caused, since a `BROWNOUT` reset now shows up as a gap in expected sensor readings on the PC side.
+- **Serial protocol lines and debug logs corrupting each other on the wire.** The logger's UART0 is shared between `ESP_LOGx` debug output and the line-based DATA/FREQ/SENSORS/... protocol the desktop app parses — a log line from one FreeRTOS task could interleave mid-character with a protocol line being printed from another, producing garbage neither side could parse. Fixed with a mutex (`pc_comm.c`'s `s_console_mutex`) held around every write to stdout, with `esp_log_set_vprintf()` routed through the same mutex so ESP_LOGx and protocol lines can only ever alternate whole lines, never interleave within one.
+- **Malformed serial input could inject bad rows into the sensor table.** Early PC→logger MAC parsing accepted whatever it was given, so a truncated or corrupted serial line risked adding a garbage entry to the peer table. Fixed by validating MAC format (`parse_mac()` in `pc_comm.c`) before acting on `ADDSENSOR`/`SETFREQ`/`REMOVESENSOR`, rejecting anything malformed with a `*_RESULT bad_mac` reply instead of silently corrupting state.
+- **Naive interval scheduling accumulated drift.** Computing each sensor's next wake as `last_wake + interval` let small timing errors compound cycle over cycle, so a sensor's actual wake time would gradually drift off its intended schedule. Fixed by scheduling from an absolute grid instead — `anchor_epoch + k*interval_sec` — recomputed fresh from `(anchor, interval, now)` on every reading rather than accumulated, so a sensor that's early or late one cycle is back on-grid the next with no compounding error.
 
 ## Limitations and Future Work
 
